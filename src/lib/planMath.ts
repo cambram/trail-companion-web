@@ -37,12 +37,33 @@ export function raceTotals(r: RaceDetail) {
   return r.segments.reduce(
     (t, s) => ({
       duration: t.duration + (s.duration || 0),
+      distance: t.distance + (s.distance || 0),
       planned: t.planned + planned(s),
       need: t.need + needed(r.target, s),
     }),
-    { duration: 0, planned: 0, need: 0 },
+    { duration: 0, distance: 0, planned: 0, need: 0 },
   )
 }
 
 /** Green when planned >= 95% of need. */
 export const onTarget = (p: number, n: number) => n > 0 && p >= n * 0.95
+
+/** "06:30:00" or "06:30" -> 390 minutes since midnight. */
+export const clockToMin = (t: string) => {
+  const [h, m] = t.split(":")
+  return +h * 60 + +m
+}
+
+/** Minutes since race-day midnight -> "HH:mm", "+1d" past midnight. */
+export function fmtClock(min: number) {
+  const day = Math.floor(min / 1440)
+  const m = Math.round(min % 1440)
+  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}${day ? ` +${day}d` : ""}`
+}
+
+/** Arrival at the end of each segment, minutes since midnight; null without a start time. */
+export function etas(r: Pick<RaceDetail, "startTime" | "segments">) {
+  if (!r.startTime) return r.segments.map(() => null)
+  let t = clockToMin(r.startTime)
+  return r.segments.map((s) => (t += s.duration || 0))
+}

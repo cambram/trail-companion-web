@@ -10,6 +10,7 @@ import { SegmentCard } from "@/components/organisms/SegmentCard"
 import { Card } from "@/components/ui/card"
 import { useRace } from "@/hooks/useRace"
 import { ApiError } from "@/lib/api"
+import { etas } from "@/lib/planMath"
 
 export default function RacePage() {
   const { id = "" } = useParams()
@@ -21,6 +22,8 @@ export default function RacePage() {
   const [actionError, setActionError] = useState<string>()
 
   if (loadError instanceof ApiError && loadError.status === 404) return <Navigate to="/" replace />
+
+  const arrivals = race ? etas(race) : []
 
   const run = async (fn: () => Promise<unknown>) => {
     setActionError(undefined)
@@ -63,6 +66,7 @@ export default function RacePage() {
               count={race.segments.length}
               segment={s}
               target={race.target}
+              eta={arrivals[i]}
               focusOnMount={s.id === newId}
               onPatch={(patch) => patchSegment(s.id, patch)}
               onDelete={() => run(() => deleteSegment(s.id))}

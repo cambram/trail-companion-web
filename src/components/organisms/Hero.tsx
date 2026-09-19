@@ -2,12 +2,13 @@ import { Plus } from "lucide-react"
 
 import { StatRail } from "@/components/molecules/StatRail"
 import { Button } from "@/components/ui/button"
+import type { RacePatch } from "@/hooks/useRace"
 import { fmtDur, onTarget, raceTotals } from "@/lib/planMath"
 import type { RaceDetail } from "@/lib/racesApi"
 
 type Props = {
   race: RaceDetail
-  onPatch: (patch: { name?: string; target?: number }) => void
+  onPatch: (patch: RacePatch) => void
   onAddSegment: () => void
   adding: boolean
 }
@@ -48,17 +49,38 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
         <StatRail planned={t.planned} need={t.need} inverse>
           <span className="opacity-65">
             {n} segment{n === 1 ? "" : "s"}
-            {t.duration ? `, ${fmtDur(t.duration)}` : ""}
           </span>
           <span className="opacity-90">
             {t.need ? (onTarget(t.planned, t.need) ? "On target" : `${t.need - t.planned} g short`) : ""}
           </span>
         </StatRail>
       </div>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <Stat label="Distance">{t.distance ? `${t.distance.toFixed(1)} km` : "–"}</Stat>
+        <Stat label="Time">{t.duration ? fmtDur(t.duration) : "–"}</Stat>
+        <Stat label="Start">
+          <input
+            aria-label="Race start time"
+            type="time"
+            className="w-full bg-transparent font-extrabold outline-none [color-scheme:inherit]"
+            value={race.startTime?.slice(0, 5) ?? ""}
+            onChange={(e) => onPatch({ startTime: e.target.value ? `${e.target.value}:00` : null })}
+          />
+        </Stat>
+      </div>
       <Button variant="onHero" block className="mt-4" onClick={onAddSegment} disabled={adding}>
         <Plus aria-hidden />
         Add segment
       </Button>
+    </div>
+  )
+}
+
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-[14px] bg-primary-foreground/10 px-3 py-2">
+      <div className="text-xs font-semibold opacity-60">{label}</div>
+      <div className="text-[1.05rem] font-extrabold tracking-[-0.02em] whitespace-nowrap">{children}</div>
     </div>
   )
 }

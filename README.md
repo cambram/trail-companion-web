@@ -37,9 +37,15 @@ Login 429 disables the button for 60s (fixed-window limit).
 | `/` | Races list + create race |
 | `/races/:id` | Race plan: segments and items |
 
+## Checks
+
+```bash
+node --experimental-strip-types src/lib/planMath.check.ts   # totals, pace, ETA math
+```
+
 ## Editing
 
-Race name and target (hero) and segment fields save automatically (debounced `PUT`). Segments and items reorder with the arrow buttons via `PUT .../segments/order` and `PUT .../items/order` (complete id list).
+Race name, target and start time (hero) and segment fields save automatically (debounced `PUT`). Segments and items reorder with the arrow buttons via `PUT .../segments/order` and `PUT .../items/order` (complete id list).
 
 ## Not included
 

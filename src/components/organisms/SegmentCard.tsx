@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fmtDur, fmtHM, needed, onTarget, paceText, parseDur, planned } from "@/lib/planMath"
+import { fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDur, planned } from "@/lib/planMath"
 import type { Segment } from "@/lib/racesApi"
 
 type Props = {
@@ -18,6 +18,7 @@ type Props = {
   count: number
   segment: Segment
   target: number
+  eta: number | null
   focusOnMount: boolean
   onPatch: (patch: SegmentPatch) => void
   onDelete: () => void
@@ -36,7 +37,7 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   )
 }
 
-export function SegmentCard({ index, count, segment: s, target, focusOnMount, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
+export function SegmentCard({ index, count, segment: s, target, eta, focusOnMount, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
   const [durText, setDurText] = useState(s.duration ? fmtHM(s.duration) : "")
   const [distText, setDistText] = useState(s.distance ? String(s.distance) : "")
   const nameRef = useRef<HTMLInputElement>(null)
@@ -69,6 +70,13 @@ export function SegmentCard({ index, count, segment: s, target, focusOnMount, on
           value={s.name}
           onChange={(e) => onPatch({ name: e.target.value })}
         />
+        <span
+          className="flex-none text-right text-[0.8125rem] leading-tight font-bold whitespace-nowrap"
+          title={eta === null ? "Set a start time to see ETAs" : "Arrival at the end of this segment"}
+        >
+          <span className="block text-xs font-semibold text-muted-foreground">ETA</span>
+          {eta === null ? "–" : fmtClock(eta)}
+        </span>
         <Button variant="icon" size="icon" disabled={index === 0} aria-label="Move segment up" onClick={() => onMove(-1)}>
           <ChevronUp aria-hidden />
         </Button>

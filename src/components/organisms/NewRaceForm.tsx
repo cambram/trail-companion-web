@@ -6,11 +6,12 @@ import { FormField } from "@/components/molecules/FormField"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
-type Props = { onCreate: (name: string, target: number) => Promise<void> }
+type Props = { onCreate: (name: string, target: number, startTime: string | null) => Promise<void> }
 
 export function NewRaceForm({ onCreate }: Props) {
   const [name, setName] = useState("")
   const [target, setTarget] = useState("60")
+  const [start, setStart] = useState("")
   const [error, setError] = useState<string>()
   const [pending, setPending] = useState(false)
 
@@ -24,7 +25,7 @@ export function NewRaceForm({ onCreate }: Props) {
     setError(undefined)
     setPending(true)
     try {
-      await onCreate(trimmed, t)
+      await onCreate(trimmed, t, start ? `${start}:00` : null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create race")
       setPending(false)
@@ -43,6 +44,7 @@ export function NewRaceForm({ onCreate }: Props) {
           value={target}
           onChange={(e) => setTarget(e.target.value)}
         />
+        <FormField label="Start time (optional)" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         {error && <ErrorText>{error}</ErrorText>}
         <Button type="submit" block disabled={pending}>
           <Plus aria-hidden />
