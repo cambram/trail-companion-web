@@ -9,5 +9,11 @@ export const login = (email: string, password: string) =>
     body: JSON.stringify({ email, password }),
   })
 
+export const register = (email: string, password: string) =>
+  apiFetch<User>("/api/users/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  })
+
 export const getMe = (token: string) =>
   apiFetch<User>("/api/users/me", { headers: { Authorization: `Bearer ${token}` } })

@@ -1,45 +1,160 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Minimal neutral shadcn tokens. Restyle here. */
+/* Tokens and rules: docs/styling.md */
 @theme inline {
+  --font-sans: "Manrope Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-ink-soft: var(--ink-soft);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+
+  --radius-md: var(--radius);
+  --radius-xl: calc(var(--radius) + 8px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --shadow-card: var(--shadow);
 }
 
-:root {
-  --radius: 0.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+:root,
+:root[data-theme="light"] {
+  --radius: 14px;
+  --background: #EFEFF1;
+  --foreground: #0E0F11;
+  --card: #FFFFFF;
+  --card-foreground: #0E0F11;
+  --popover: #FFFFFF;
+  --popover-foreground: #0E0F11;
+  --primary: #0E0F11;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F5F7;
+  --secondary-foreground: #0E0F11;
+  --muted: #F4F5F7;
+  --muted-foreground: #8A8F98;
+  --accent: #F4F5F7;
+  --accent-foreground: #0E0F11;
+  --destructive: #D23B3B;
+  --border: #EAEBEE;
+  --input: transparent;
+  --ring: #2563EB;
+
+  --ink-soft: #3A3F45;
+  --blue: #2563EB;
+  --blue-soft: #E7EFFD;
+  --green: #12804B;
+  --green-soft: #E6F6EC;
+  --red: #D23B3B;
+  --red-soft: #FCEBEB;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 26px rgba(16, 24, 40, 0.05);
+  color-scheme: light;
 }
 
-body {
-  @apply bg-background text-foreground;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0C0D0F;
+    --foreground: #F2F3F5;
+    --card: #17191C;
+    --card-foreground: #F2F3F5;
+    --popover: #17191C;
+    --popover-foreground: #F2F3F5;
+    --primary: #FFFFFF;
+    --primary-foreground: #0E0F11;
+    --secondary: #1F2227;
+    --secondary-foreground: #F2F3F5;
+    --muted: #1F2227;
+    --muted-foreground: #8F959E;
+    --accent: #1F2227;
+    --accent-foreground: #F2F3F5;
+    --destructive: #FF7B7B;
+    --border: #24282D;
+    --ring: #7FA9FF;
+
+    --ink-soft: #D2D6DB;
+    --blue: #7FA9FF;
+    --blue-soft: #1B2436;
+    --green: #5BD48D;
+    --green-soft: #12271C;
+    --red: #FF7B7B;
+    --red-soft: #2B1717;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+/* Keep in sync with the media-query block above. */
+:root[data-theme="dark"] {
+  --background: #0C0D0F;
+  --foreground: #F2F3F5;
+  --card: #17191C;
+  --card-foreground: #F2F3F5;
+  --popover: #17191C;
+  --popover-foreground: #F2F3F5;
+  --primary: #FFFFFF;
+  --primary-foreground: #0E0F11;
+  --secondary: #1F2227;
+  --secondary-foreground: #F2F3F5;
+  --muted: #1F2227;
+  --muted-foreground: #8F959E;
+  --accent: #1F2227;
+  --accent-foreground: #F2F3F5;
+  --destructive: #FF7B7B;
+  --border: #24282D;
+  --ring: #7FA9FF;
+
+  --ink-soft: #D2D6DB;
+  --blue: #7FA9FF;
+  --blue-soft: #1B2436;
+  --green: #5BD48D;
+  --green-soft: #12271C;
+  --red: #FF7B7B;
+  --red-soft: #2B1717;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  button,
+  input,
+  textarea {
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }

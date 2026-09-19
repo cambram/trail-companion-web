@@ -13,7 +13,7 @@ export function FormField({ label, error, id, ...inputProps }: FormFieldProps) {
   const autoId = useId()
   const inputId = id ?? autoId
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-1.5">
       <Label htmlFor={inputId}>{label}</Label>
       <Input id={inputId} aria-invalid={!!error} {...inputProps} />
       {error && <ErrorText>{error}</ErrorText>}
