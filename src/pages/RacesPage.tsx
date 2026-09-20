@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router"
+import { Link, useNavigate } from "react-router"
 
 import { useAuth } from "@/auth/AuthContext"
 import { AppFrame } from "@/components/atoms/AppFrame"
@@ -23,6 +23,9 @@ export default function RacesPage() {
           <Heading>Races</Heading>
           <Subtitle>Plan each segment's fuel and pace</Subtitle>
         </div>
+        <Button variant="quiet" asChild>
+          <Link to="/nutrition">Nutrition</Link>
+        </Button>
         <Button variant="quiet" onClick={logout}>
           Log out
         </Button>

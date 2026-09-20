@@ -121,8 +121,8 @@ export function useRace(id: string) {
   )
 
   const addItem = useCallback(
-    async (segId: string, name: string, carbs: number) => {
-      const item = await api.createItem(id, segId, { name, carbs })
+    async (segId: string, nutritionItemId: string) => {
+      const item = await api.createItem(id, segId, nutritionItemId)
       setRace(
         (r) =>
           r && {

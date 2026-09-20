@@ -8,6 +8,7 @@ import { ConfirmButton } from "@/components/molecules/ConfirmButton"
 import { Hero } from "@/components/organisms/Hero"
 import { SegmentCard } from "@/components/organisms/SegmentCard"
 import { Card } from "@/components/ui/card"
+import { useNutrition } from "@/hooks/useNutrition"
 import { useRace } from "@/hooks/useRace"
 import { ApiError } from "@/lib/api"
 import { etas } from "@/lib/planMath"
@@ -17,6 +18,7 @@ export default function RacePage() {
   const navigate = useNavigate()
   const { race, loadError, saveError, patchRace, moveSegment, moveItem, patchSegment, addSegment, deleteSegment, addItem, deleteItem, deleteRace } =
     useRace(id)
+  const { items: library } = useNutrition()
   const [newId, setNewId] = useState<string>()
   const [adding, setAdding] = useState(false)
   const [actionError, setActionError] = useState<string>()
@@ -68,12 +70,13 @@ export default function RacePage() {
               target={race.target}
               eta={arrivals[i]}
               focusOnMount={s.id === newId}
+              library={library}
               onPatch={(patch) => patchSegment(s.id, patch)}
               onDelete={() => run(() => deleteSegment(s.id))}
-              onAddItem={async (name, carbs) => {
+              onAddItem={async (nutritionItemId) => {
                 setActionError(undefined)
                 try {
-                  await addItem(s.id, name, carbs)
+                  await addItem(s.id, nutritionItemId)
                 } catch (e) {
                   setActionError(e instanceof Error ? e.message : "Something went wrong")
                   throw e

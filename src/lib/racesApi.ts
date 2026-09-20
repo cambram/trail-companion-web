@@ -2,7 +2,27 @@ import type { AuthState } from "@/auth/AuthContext"
 
 export type Race = { id: string; name: string; target: number; startTime: string | null; createdAtUtc: string }
 
-export type Item = { id: string; segmentId: string; position: number; name: string; carbs: number }
+export type NutritionType = "Gel" | "Liquid" | "Solid" | "Pill"
+
+export type NutritionItem = {
+  id: string
+  name: string
+  type: NutritionType
+  size: number | null
+  carbs: number | null
+  calories: number | null
+  caffeine: number | null
+  sodium: number | null
+  potassium: number | null
+  magnesium: number | null
+  calcium: number | null
+}
+
+export type Item = NutritionItem & {
+  segmentId: string
+  nutritionItemId: string
+  position: number
+}
 
 export type Segment = {
   id: string
@@ -17,7 +37,8 @@ export type Segment = {
 export type RaceDetail = Race & { segments: Segment[] }
 
 export type SegmentRequest = { name: string; duration: number; distance?: number | null; notes?: string }
-export type ItemRequest = { name: string; carbs: number }
+export type NutritionItemRequest = Omit<NutritionItem, "id">
+export type ItemRequest = { nutritionItemId: string }
 
 type Fetch = AuthState["authFetch"]
 
@@ -47,10 +68,14 @@ export const racesApi = (f: Fetch) => ({
   reorderItems: (raceId: string, segmentId: string, ids: string[]) =>
     f<void>(`/api/races/${raceId}/segments/${segmentId}/items/order`, json("PUT", { ids })),
 
-  createItem: (raceId: string, segmentId: string, body: ItemRequest) =>
-    f<Item>(`/api/races/${raceId}/segments/${segmentId}/items`, json("POST", body)),
-  updateItem: (raceId: string, segmentId: string, id: string, body: ItemRequest) =>
-    f<Item>(`/api/races/${raceId}/segments/${segmentId}/items/${id}`, json("PUT", body)),
+  listNutrition: () => f<NutritionItem[]>("/api/nutrition-items"),
+  createNutrition: (body: NutritionItemRequest) => f<NutritionItem>("/api/nutrition-items", json("POST", body)),
+  updateNutrition: (id: string, body: NutritionItemRequest) =>
+    f<NutritionItem>(`/api/nutrition-items/${id}`, json("PUT", body)),
+  deleteNutrition: (id: string) => f<void>(`/api/nutrition-items/${id}`, json("DELETE")),
+
+  createItem: (raceId: string, segmentId: string, nutritionItemId: string) =>
+    f<Item>(`/api/races/${raceId}/segments/${segmentId}/items`, json("POST", { nutritionItemId })),
   deleteItem: (raceId: string, segmentId: string, id: string) =>
     f<void>(`/api/races/${raceId}/segments/${segmentId}/items/${id}`, json("DELETE")),
 })

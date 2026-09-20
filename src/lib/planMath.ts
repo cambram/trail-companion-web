@@ -1,4 +1,4 @@
-import type { RaceDetail, Segment } from "./racesApi"
+import type { NutritionItem, NutritionType, RaceDetail, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -27,7 +27,17 @@ export function parseDur(v: string): number | null {
 export const paceText = (s: Pick<Segment, "duration" | "distance">) =>
   s.duration && s.distance && s.distance > 0 ? `${fmtPace(s.duration / s.distance)} /km` : "– /km"
 
-export const planned = (s: Segment) => s.items.reduce((a, i) => a + (i.carbs || 0), 0)
+export const NUTRITION_TYPES: NutritionType[] = ["Gel", "Liquid", "Solid", "Pill"]
+
+export const sizeUnit = (type: NutritionType) => (type === "Liquid" ? "ml" : type === "Pill" ? "mg" : "g")
+
+export const sizeText = (n: Pick<NutritionItem, "type" | "size">) =>
+  n.size === null ? "" : `${n.size} ${sizeUnit(n.type)}`
+
+export const planned = (s: Segment) => s.items.reduce((a, i) => a + (i.carbs ?? 0), 0)
+
+export const fluid = (s: Segment) =>
+  s.items.reduce((a, i) => a + (i.type === "Liquid" ? (i.size ?? 0) : 0), 0)
 
 export const needed = (target: number, s: Segment) => Math.round((s.duration / 60) * (target || 0))
 
@@ -40,8 +50,9 @@ export function raceTotals(r: RaceDetail) {
       distance: t.distance + (s.distance || 0),
       planned: t.planned + planned(s),
       need: t.need + needed(r.target, s),
+      fluid: t.fluid + fluid(s),
     }),
-    { duration: 0, distance: 0, planned: 0, need: 0 },
+    { duration: 0, distance: 0, planned: 0, need: 0, fluid: 0 },
   )
 }
 

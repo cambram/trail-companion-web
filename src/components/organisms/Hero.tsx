@@ -45,6 +45,9 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
       <div className="mt-0.5 text-[2.1rem] leading-[1.1] font-extrabold tracking-[-0.03em]">
         {t.planned} g <span className="text-base font-semibold opacity-60">of {t.need} g needed</span>
       </div>
+      <div className="mt-1 text-[0.8125rem] font-semibold opacity-60">
+        Fluid planned <span className="font-extrabold opacity-100">{t.fluid} ml</span>
+      </div>
       <div className="mt-3.5">
         <StatRail planned={t.planned} need={t.need} inverse>
           <span className="opacity-65">

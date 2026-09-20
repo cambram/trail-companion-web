@@ -10,8 +10,8 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDur, planned } from "@/lib/planMath"
-import type { Segment } from "@/lib/racesApi"
+import { fluid, fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDur, planned } from "@/lib/planMath"
+import type { NutritionItem, Segment } from "@/lib/racesApi"
 
 type Props = {
   index: number
@@ -23,7 +23,8 @@ type Props = {
   onPatch: (patch: SegmentPatch) => void
   onDelete: () => void
   onMove: (d: number) => void
-  onAddItem: (name: string, carbs: number) => Promise<void>
+  library: NutritionItem[] | undefined
+  onAddItem: (nutritionItemId: string) => Promise<void>
   onDeleteItem: (id: string) => void
   onMoveItem: (id: string, d: number) => void
 }
@@ -37,7 +38,7 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   )
 }
 
-export function SegmentCard({ index, count, segment: s, target, eta, focusOnMount, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
+export function SegmentCard({ index, count, segment: s, target, eta, focusOnMount, library, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
   const [durText, setDurText] = useState(s.duration ? fmtHM(s.duration) : "")
   const [distText, setDistText] = useState(s.distance ? String(s.distance) : "")
   const nameRef = useRef<HTMLInputElement>(null)
@@ -51,6 +52,7 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
   }, [focusOnMount])
 
   const p = planned(s)
+  const f = fluid(s)
   const n = needed(target, s)
   const ok = onTarget(p, n)
 
@@ -143,7 +145,7 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
         />
       </Field>
 
-      <ItemList items={s.items} onAdd={onAddItem} onDelete={onDeleteItem} onMove={onMoveItem} />
+      <ItemList items={s.items} library={library} onAdd={onAddItem} onDelete={onDeleteItem} onMove={onMoveItem} />
 
       <StatRail planned={p} need={n}>
         {s.duration ? (
@@ -160,6 +162,8 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
           <span className="text-muted-foreground">Add a predicted time to see carbs needed</span>
         )}
       </StatRail>
+
+      {f > 0 && <div className="text-[0.8125rem] font-semibold text-muted-foreground">Fluid {f} ml</div>}
 
       <div className="flex justify-end">
         <ConfirmButton label="Delete segment" armedLabel="Tap again to delete" onConfirm={onDelete} />
