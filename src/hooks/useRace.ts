@@ -15,7 +15,7 @@ function move<T>(arr: T[], i: number, d: number) {
   return copy
 }
 
-export type RacePatch = Partial<Pick<RaceDetail, "name" | "target" | "startTime">>
+export type RacePatch = Partial<Pick<RaceDetail, "name" | "target" | "startTime" | "raceDate">>
 export type SegmentPatch = Partial<Pick<Segment, "name" | "duration" | "distance" | "notes">>
 
 export function useRace(id: string) {
@@ -69,7 +69,7 @@ export function useRace(id: string) {
     const r = raceRef.current
     if (!r || !r.name.trim()) return
     api
-      .updateRace(id, r.name.trim(), r.target, r.startTime)
+      .updateRace(id, { name: r.name.trim(), target: r.target, startTime: r.startTime, raceDate: r.raceDate })
       .then(() => setSaveError(undefined))
       .catch((e: Error) => setSaveError(e.message))
   }, [api, id])

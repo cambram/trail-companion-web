@@ -14,7 +14,7 @@ export function RaceCard({ race }: { race: Race }) {
         <span className="min-w-0 flex-1">
           <b className="block truncate text-[1.05rem] tracking-[-0.02em]">{race.name}</b>
           <span className="text-[0.8125rem] text-muted-foreground">
-            {race.target} g/h · {new Date(race.createdAtUtc).toLocaleDateString()}
+            {race.target} g/h · {race.raceDate ? new Date(`${race.raceDate}T00:00`).toLocaleDateString() : "No date"}
           </span>
         </span>
         <span className="grid size-9 flex-none place-items-center rounded-full bg-secondary text-ink-soft">

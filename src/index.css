@@ -31,6 +31,14 @@
   --color-green-soft: var(--green-soft);
   --color-red: var(--red);
   --color-red-soft: var(--red-soft);
+  --color-nutrition-gel: var(--nutrition-gel);
+  --color-nutrition-gel-soft: var(--nutrition-gel-soft);
+  --color-nutrition-liquid: var(--nutrition-liquid);
+  --color-nutrition-liquid-soft: var(--nutrition-liquid-soft);
+  --color-nutrition-solid: var(--nutrition-solid);
+  --color-nutrition-solid-soft: var(--nutrition-solid-soft);
+  --color-nutrition-pill: var(--nutrition-pill);
+  --color-nutrition-pill-soft: var(--nutrition-pill-soft);
 
   --radius-md: var(--radius);
   --radius-xl: calc(var(--radius) + 8px);
@@ -67,6 +75,14 @@
   --green-soft: #E6F6EC;
   --red: #D23B3B;
   --red-soft: #FCEBEB;
+  --nutrition-gel: #6D28D9;
+  --nutrition-gel-soft: #F1EBFD;
+  --nutrition-liquid: #0F766E;
+  --nutrition-liquid-soft: #E3F5F3;
+  --nutrition-solid: #92400E;
+  --nutrition-solid-soft: #FDF1DC;
+  --nutrition-pill: #475569;
+  --nutrition-pill-soft: #EEF1F5;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 26px rgba(16, 24, 40, 0.05);
   color-scheme: light;
 }
@@ -98,6 +114,14 @@
     --green-soft: #12271C;
     --red: #FF7B7B;
     --red-soft: #2B1717;
+    --nutrition-gel: #C4A7FF;
+    --nutrition-gel-soft: #231B36;
+    --nutrition-liquid: #5ED3C6;
+    --nutrition-liquid-soft: #0F2624;
+    --nutrition-solid: #F5C26B;
+    --nutrition-solid-soft: #2A2112;
+    --nutrition-pill: #B6C0CE;
+    --nutrition-pill-soft: #20252D;
     --shadow: none;
     color-scheme: dark;
   }
@@ -130,6 +154,14 @@
   --green-soft: #12271C;
   --red: #FF7B7B;
   --red-soft: #2B1717;
+  --nutrition-gel: #C4A7FF;
+  --nutrition-gel-soft: #231B36;
+  --nutrition-liquid: #5ED3C6;
+  --nutrition-liquid-soft: #0F2624;
+  --nutrition-solid: #F5C26B;
+  --nutrition-solid-soft: #2A2112;
+  --nutrition-pill: #B6C0CE;
+  --nutrition-pill-soft: #20252D;
   --shadow: none;
   color-scheme: dark;
 }

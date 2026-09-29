@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react"
 import { Popover } from "radix-ui"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ type Props = {
 export function AddNutrition({ library, onPick }: Props) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState("")
+  const searchRef = useRef<HTMLInputElement>(null)
 
   if (library === undefined) return null
 
@@ -51,10 +52,15 @@ export function AddNutrition({ library, onPick }: Props) {
           <Popover.Content
             align="start"
             sideOffset={8}
+            collisionPadding={12}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault()
+              searchRef.current?.focus({ preventScroll: true })
+            }}
             className="z-50 w-[min(320px,calc(100vw-36px))] rounded-xl bg-card p-2 shadow-card"
           >
             <Input
-              autoFocus
+              ref={searchRef}
               aria-label="Search your nutrition"
               placeholder="Search your nutrition"
               value={q}

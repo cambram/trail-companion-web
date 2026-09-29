@@ -14,20 +14,35 @@ export const fmtPace = (minPerKm: number) => {
   return `${Math.floor(s / 60)}:${pad(s % 60)}`
 }
 
-/** "3:00" -> 180, "3" -> 180, "" -> 0, invalid -> null. Minutes. */
+/** "3:30", "3.30", "3,30", "3 30", "330" -> 210 (H:MM, not decimal hours); "3" -> 180; "" -> 0; invalid -> null. */
 export function parseDur(v: string): number | null {
   v = v.trim()
   if (!v) return 0
-  const m = v.match(/^(\d{1,2}):([0-5]\d)$/)
-  if (m) return +m[1] * 60 + +m[2]
+  const m = v.match(/^(\d{1,2})[:., ]?([0-5]\d)$/)
+  if (m) return +m[1] < 24 ? +m[1] * 60 + +m[2] : null
   if (/^\d{1,2}$/.test(v)) return +v * 60
   return null
+}
+
+/** "12.5" or "12,5" -> 12.5, "" -> 0, negative or non-numeric -> null. Km. */
+export function parseDistance(v: string): number | null {
+  v = v.trim().replace(",", ".")
+  if (!v) return 0
+  return /^(\d+\.?\d*|\.\d+)$/.test(v) ? Number(v) : null
 }
 
 export const paceText = (s: Pick<Segment, "duration" | "distance">) =>
   s.duration && s.distance && s.distance > 0 ? `${fmtPace(s.duration / s.distance)} /km` : "– /km"
 
 export const NUTRITION_TYPES: NutritionType[] = ["Gel", "Liquid", "Solid", "Pill"]
+
+/** Category colour, not status: see docs/styling.md 2.4. Literal strings so Tailwind emits them. */
+export const NUTRITION_TYPE_CLASSES: Record<NutritionType, string> = {
+  Gel: "bg-nutrition-gel-soft text-nutrition-gel",
+  Liquid: "bg-nutrition-liquid-soft text-nutrition-liquid",
+  Solid: "bg-nutrition-solid-soft text-nutrition-solid",
+  Pill: "bg-nutrition-pill-soft text-nutrition-pill",
+}
 
 export const sizeUnit = (type: NutritionType) => (type === "Liquid" ? "ml" : type === "Pill" ? "mg" : "g")
 

@@ -58,6 +58,10 @@ All colors are semantic tokens. Components never use raw hex values. They refere
 | `--green-soft` | `#E6F6EC` | Green pill background |
 | `--red` | `#D23B3B` | Error, "short", destructive armed state |
 | `--red-soft` | `#FCEBEB` | Red pill background |
+| `--nutrition-gel` / `-soft` | `#6D28D9` / `#F1EBFD` | Gel type badge (category, see 2.4) |
+| `--nutrition-liquid` / `-soft` | `#0F766E` / `#E3F5F3` | Liquid type badge |
+| `--nutrition-solid` / `-soft` | `#92400E` / `#FDF1DC` | Solid type badge |
+| `--nutrition-pill` / `-soft` | `#475569` / `#EEF1F5` | Pill type badge |
 
 ### 2.2 Dark theme
 
@@ -78,6 +82,10 @@ All colors are semantic tokens. Components never use raw hex values. They refere
 | `--green-soft` | `#12271C` |
 | `--red` | `#FF7B7B` |
 | `--red-soft` | `#2B1717` |
+| `--nutrition-gel` / `-soft` | `#C4A7FF` / `#231B36` |
+| `--nutrition-liquid` / `-soft` | `#5ED3C6` / `#0F2624` |
+| `--nutrition-solid` / `-soft` | `#F5C26B` / `#2A2112` |
+| `--nutrition-pill` / `-soft` | `#B6C0CE` / `#20252D` |
 
 Note the inversion: in dark mode `--btn` becomes white, so the hero card and primary buttons turn white with dark text. Status colors get lighter and their soft backgrounds become deep tints.
 
@@ -88,6 +96,10 @@ Note the inversion: in dark mode `--btn` becomes white, so the hero card and pri
 - **Inversion pairing:** anything on `--btn` uses `--btn-ink`. Inside the hero, secondary text is `--btn-ink` at 60 to 65% opacity, tertiary at 45%.
 - **Overlays on the hero:** translucent white (`rgba(255,255,255,.14)` for pill fields, `.2` for the progress track). These are the only sanctioned hard-coded colors.
 - **Thresholds:** a progress metric is "on target" (green) at 95% or more of its goal, otherwise "short" (red). "Over" is still green with an "N over" label. Do not introduce amber unless a design explicitly calls for it.
+
+### 2.4 Category scale (nutrition type)
+
+`--nutrition-{gel,liquid,solid,pill}` and their `-soft` backgrounds label **what an item is**. This is a category scale, not status colour: it never means success, failure, on target or short, and status meaning never uses it. Hues (violet, teal, amber, slate) are chosen to stay distinct from `--green` and `--red`. Always pair text with its `-soft` background; the only mapping is `NUTRITION_TYPE_CLASSES` in `src/lib/planMath.ts`. Every pair meets 4.5:1 (light 4.9 to 6.7, dark 8.1 to 9.7).
 
 ---
 

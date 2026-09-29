@@ -47,6 +47,10 @@ node --experimental-strip-types src/lib/planMath.check.ts   # totals, pace, ETA 
 
 Race name, target and start time (hero) and segment fields save automatically (debounced `PUT`). Segments and items reorder with the arrow buttons via `PUT .../segments/order` and `PUT .../items/order` (complete id list).
 
+## Deploy
+
+Render static site (`render.yaml`). Client-side routes need an SPA rewrite: `public/_redirects` (`/* /index.html 200`) ships in `dist/`, and `render.yaml` declares the same rule. A service created by hand in the dashboard ignores `render.yaml`; add the rewrite under Redirects/Rewrites there or re-create it from the Blueprint. `VITE_API_URL` is set in the dashboard.
+
 ## Not included
 
 Item edit-in-place (API `PUT` exists, no UI).

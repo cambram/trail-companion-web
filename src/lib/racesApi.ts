@@ -1,6 +1,8 @@
 import type { AuthState } from "@/auth/AuthContext"
 
-export type Race = { id: string; name: string; target: number; startTime: string | null; createdAtUtc: string }
+export type Race = { id: string; name: string; target: number; startTime: string | null; raceDate: string | null; createdAtUtc: string }
+
+export type RaceRequest = Pick<Race, "name" | "target" | "startTime" | "raceDate">
 
 export type NutritionType = "Gel" | "Liquid" | "Solid" | "Pill"
 
@@ -49,11 +51,9 @@ const json = (method: string, body?: unknown): RequestInit => ({
 
 export const racesApi = (f: Fetch) => ({
   listRaces: () => f<Race[]>("/api/races"),
-  createRace: (name: string, target: number, startTime: string | null) =>
-    f<Race>("/api/races", json("POST", { name, target, startTime })),
+  createRace: (body: RaceRequest) => f<Race>("/api/races", json("POST", body)),
   getRace: (id: string) => f<RaceDetail>(`/api/races/${id}`),
-  updateRace: (id: string, name: string, target: number, startTime: string | null) =>
-    f<Race>(`/api/races/${id}`, json("PUT", { name, target, startTime })),
+  updateRace: (id: string, body: RaceRequest) => f<Race>(`/api/races/${id}`, json("PUT", body)),
   deleteRace: (id: string) => f<void>(`/api/races/${id}`, json("DELETE")),
 
   createSegment: (raceId: string, body: SegmentRequest) =>

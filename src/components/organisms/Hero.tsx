@@ -42,7 +42,7 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
         </span>
       </div>
       <div className="mt-3.5 text-[0.8125rem] font-semibold opacity-60">Carbs planned</div>
-      <div className="mt-0.5 text-[2.1rem] leading-[1.1] font-extrabold tracking-[-0.03em]">
+      <div className="mt-0.5 text-[1.75rem] leading-[1.1] sm:text-[2.1rem] font-extrabold tracking-[-0.03em]">
         {t.planned} g <span className="text-base font-semibold opacity-60">of {t.need} g needed</span>
       </div>
       <div className="mt-1 text-[0.8125rem] font-semibold opacity-60">
@@ -58,14 +58,23 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
           </span>
         </StatRail>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <Stat label="Distance">{t.distance ? `${t.distance.toFixed(1)} km` : "–"}</Stat>
         <Stat label="Time">{t.duration ? fmtDur(t.duration) : "–"}</Stat>
+        <Stat label="Date">
+          <input
+            aria-label="Race date"
+            type="date"
+            className="w-full min-w-0 appearance-none bg-transparent font-extrabold outline-none [color-scheme:inherit]"
+            value={race.raceDate ?? ""}
+            onChange={(e) => onPatch({ raceDate: e.target.value || null })}
+          />
+        </Stat>
         <Stat label="Start">
           <input
             aria-label="Race start time"
             type="time"
-            className="w-full bg-transparent font-extrabold outline-none [color-scheme:inherit]"
+            className="w-full min-w-0 appearance-none bg-transparent font-extrabold outline-none [color-scheme:inherit]"
             value={race.startTime?.slice(0, 5) ?? ""}
             onChange={(e) => onPatch({ startTime: e.target.value ? `${e.target.value}:00` : null })}
           />

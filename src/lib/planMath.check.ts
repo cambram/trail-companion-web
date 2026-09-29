@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 
-import { clockToMin, etas, fluid, fmtClock, fmtDur, paceText, raceTotals, sizeText, sizeUnit } from "./planMath.ts"
+import { clockToMin, etas, fluid, fmtClock, fmtDur, paceText, parseDistance, parseDur, raceTotals, sizeText, sizeUnit } from "./planMath.ts"
 import type { Item, NutritionType, RaceDetail, Segment } from "./racesApi.ts"
 
 const item = (carbs: number | null, type: NutritionType = "Gel", size: number | null = null): Item => ({
@@ -35,6 +35,7 @@ const race: RaceDetail = {
   name: "UTCT 55K",
   target: 60,
   startTime: "06:00:00",
+  raceDate: null,
   createdAtUtc: "",
   segments: [
     seg(90, 11, [item(40), item(25), item(40)]),
@@ -55,4 +56,14 @@ assert.equal(paceText(race.segments[0]), "8:11 /km")
 assert.deepEqual(etas(race).map((m) => fmtClock(m!)), ["07:30", "10:30"])
 assert.deepEqual(etas({ ...race, startTime: null }), [null, null])
 assert.equal(fmtClock(clockToMin("23:00") + 90), "00:30 +1d")
+for (const v of ["3:30", "3.30", "3,30", "3 30", "330", "0330", " 3:30 "]) assert.equal(parseDur(v), 210, v)
+assert.equal(parseDur("3.30"), 210, "3.30 is 3 h 30 min, a duration, not 3.3 decimal hours (198)")
+assert.equal(parseDur("3"), 180)
+assert.equal(parseDur(""), 0)
+for (const v of ["3:75", "abc", "-1", "25:00", "3:5", "3.5"]) assert.equal(parseDur(v), null, v)
+
+for (const [v, km] of [["12.5", 12.5], ["12,5", 12.5], [" 12 ", 12], ["12.", 12], [".5", 0.5], ["", 0]] as const)
+  assert.equal(parseDistance(v), km, v)
+for (const v of ["-1", "abc", "1,2,3", "1.2.3", "1e3"]) assert.equal(parseDistance(v), null, v)
+
 console.log("planMath ok")

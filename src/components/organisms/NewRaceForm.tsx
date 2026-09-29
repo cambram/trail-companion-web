@@ -5,13 +5,15 @@ import { ErrorText } from "@/components/atoms/ErrorText"
 import { FormField } from "@/components/molecules/FormField"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import type { RaceRequest } from "@/lib/racesApi"
 
-type Props = { onCreate: (name: string, target: number, startTime: string | null) => Promise<void> }
+type Props = { onCreate: (body: RaceRequest) => Promise<void> }
 
 export function NewRaceForm({ onCreate }: Props) {
   const [name, setName] = useState("")
   const [target, setTarget] = useState("60")
   const [start, setStart] = useState("")
+  const [date, setDate] = useState("")
   const [error, setError] = useState<string>()
   const [pending, setPending] = useState(false)
 
@@ -25,7 +27,7 @@ export function NewRaceForm({ onCreate }: Props) {
     setError(undefined)
     setPending(true)
     try {
-      await onCreate(trimmed, t, start ? `${start}:00` : null)
+      await onCreate({ name: trimmed, target: t, startTime: start ? `${start}:00` : null, raceDate: date || null })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create race")
       setPending(false)
@@ -44,6 +46,7 @@ export function NewRaceForm({ onCreate }: Props) {
           value={target}
           onChange={(e) => setTarget(e.target.value)}
         />
+        <FormField label="Race date (optional)" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <FormField label="Start time (optional)" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         {error && <ErrorText>{error}</ErrorText>}
         <Button type="submit" block disabled={pending}>

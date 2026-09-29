@@ -5,7 +5,7 @@ import { ConfirmButton } from "@/components/molecules/ConfirmButton"
 import { NutritionForm } from "@/components/organisms/NutritionForm"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { sizeText } from "@/lib/planMath"
+import { NUTRITION_TYPE_CLASSES, sizeText } from "@/lib/planMath"
 import type { NutritionItem, NutritionItemRequest } from "@/lib/racesApi"
 
 type Props = {
@@ -47,7 +47,7 @@ export function NutritionCard({ item, onSave, onDelete }: Props) {
     <Card>
       <div className="flex items-start justify-between gap-2.5">
         <span className="min-w-0 text-[1.05rem] font-extrabold tracking-[-0.02em]">{item.name}</span>
-        <span className="flex-none rounded-full bg-blue-soft px-3 py-[5px] text-xs font-bold text-blue">{item.type}</span>
+        <span className={`flex-none rounded-full px-3 py-[5px] text-xs font-bold ${NUTRITION_TYPE_CLASSES[item.type]}`}>{item.type}</span>
       </div>
       <p className="text-[13px] text-muted-foreground">{facts.filter(Boolean).join(" · ") || "No values recorded"}</p>
       {error && <ErrorText>{error}</ErrorText>}

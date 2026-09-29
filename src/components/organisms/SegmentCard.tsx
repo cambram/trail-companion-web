@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fluid, fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDur, planned } from "@/lib/planMath"
+import { fluid, fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDistance, parseDur, planned } from "@/lib/planMath"
 import type { NutritionItem, Segment } from "@/lib/racesApi"
 
 type Props = {
@@ -43,7 +43,7 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
   const [distText, setDistText] = useState(s.distance ? String(s.distance) : "")
   const nameRef = useRef<HTMLInputElement>(null)
   const durValid = parseDur(durText) !== null
-  const distValid = distText.trim() === "" || Number(distText) >= 0
+  const distValid = parseDistance(distText) !== null
 
   useEffect(() => {
     if (!focusOnMount) return
@@ -93,11 +93,13 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
         </Button>
       </div>
 
-      <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2.5">
         <Field label="Time" id={`d-${s.id}`}>
           <Input
             id={`d-${s.id}`}
-            inputMode="numeric"
+            className="px-2.5 sm:px-3.5"
+            inputMode="text"
+            autoComplete="off"
             placeholder="3:00"
             aria-invalid={!durValid}
             value={durText}
@@ -112,23 +114,22 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
         <Field label="Distance" id={`k-${s.id}`}>
           <Input
             id={`k-${s.id}`}
-            type="number"
+            className="px-2.5 sm:px-3.5"
             inputMode="decimal"
-            min={0}
-            step={0.1}
+            autoComplete="off"
             placeholder="15 km"
             aria-invalid={!distValid}
             value={distText}
             onChange={(e) => {
               setDistText(e.target.value)
-              const v = e.target.value.trim() === "" ? 0 : Number(e.target.value)
-              if (v >= 0) onPatch({ distance: v })
+              const v = parseDistance(e.target.value)
+              if (v !== null) onPatch({ distance: v })
             }}
           />
         </Field>
         <div className="grid gap-1.5">
           <Label>Pace</Label>
-          <div className="flex min-h-[46px] items-center rounded-md bg-secondary px-3.5 font-bold whitespace-nowrap">
+          <div className="flex min-h-[46px] items-center rounded-md bg-secondary px-2.5 font-bold whitespace-nowrap sm:px-3.5">
             {paceText(s)}
           </div>
         </div>

@@ -47,7 +47,7 @@ export default function RacesPage() {
         )}
         {races === undefined && !error && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}
         {races?.map((r) => <RaceCard key={r.id} race={r} />)}
-        <NewRaceForm onCreate={async (name, target, startTime) => navigate(`/races/${(await createRace(name, target, startTime)).id}`)} />
+        <NewRaceForm onCreate={async (body) => navigate(`/races/${(await createRace(body)).id}`)} />
       </div>
     </AppFrame>
   )
