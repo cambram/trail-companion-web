@@ -6,6 +6,7 @@ import NutritionPage from "@/pages/NutritionPage"
 import RegisterPage from "@/pages/RegisterPage"
 import RacePage from "@/pages/RacePage"
 import RacesPage from "@/pages/RacesPage"
+import SettingsPage from "@/pages/SettingsPage"
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/" element={<RacesPage />} />
         <Route path="/races/:id" element={<RacePage />} />
         <Route path="/nutrition" element={<NutritionPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

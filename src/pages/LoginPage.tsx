@@ -1,4 +1,4 @@
-import { Link, Navigate } from "react-router"
+import { Link, Navigate, useLocation } from "react-router"
 
 import { useAuth } from "@/auth/AuthContext"
 import { AppFrame } from "@/components/atoms/AppFrame"
@@ -19,12 +19,13 @@ function toLoginError(e: unknown) {
 
 export default function LoginPage() {
   const { user, login } = useAuth()
+  const notice = (useLocation().state as { notice?: string } | null)?.notice
   if (user) return <Navigate to="/" replace />
   return (
     <AppFrame className="pt-6">
       <header className="pb-[18px]">
         <Heading>Trail Companion</Heading>
-        <Subtitle>Log in to continue</Subtitle>
+        <Subtitle>{notice ?? "Log in to continue"}</Subtitle>
       </header>
       <AuthForm
         title="Log in"

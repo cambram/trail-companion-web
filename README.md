@@ -25,7 +25,16 @@ npm run dev            # http://localhost:5173 (must match API Cors:AllowedOrigi
 
 ## Auth
 
-Follows `trail-companion-api/docs/auth.md`: JWT bearer, 15 min, no refresh. Login stores `{accessToken, expiresAtUtc}` in localStorage, loads `/api/users/me`, auto-logs out at expiry and on any 401 from `authFetch`. Use `useAuth().authFetch(path)` for protected calls.
+Follows `trail-companion-api/docs/auth.md`: 15 min JWT bearer plus a 30-day refresh token in an httpOnly cookie. Every request uses `credentials: "include"` (`src/lib/api.ts`), or the cookie is never sent.
+
+- Login stores only `{accessToken, expiresAtUtc}` in localStorage. The refresh token is never readable by JavaScript.
+- `AuthProvider` refreshes 60s before expiry. On an expired-token 401 (empty body), `authFetch` refreshes once and retries once. Concurrent 401s share one in-flight refresh, because presenting a rotated cookie twice revokes the session.
+- A 401 **with** ProblemDetails (wrong current password on the settings forms) is thrown to the caller and does not log out.
+- Only a refresh 401 ends the session; offline or 429 keeps it for a later retry.
+- On reload with an expired stored token, the first call refreshes via the cookie, so the user stays logged in.
+- `logout()` calls `POST /api/users/logout` (revokes the cookie), then clears local state.
+
+Use `useAuth().authFetch(path)` for protected calls.
 
 Login 429 disables the button for 60s (fixed-window limit).
 
@@ -36,6 +45,12 @@ Login 429 disables the button for 60s (fixed-window limit).
 | `/login`, `/register` | Auth (register logs in automatically) |
 | `/` | Races list + create race |
 | `/races/:id` | Race plan: segments and items |
+| `/nutrition` | Nutrition library |
+| `/settings` | Account info, name, theme, password, log out, delete account |
+
+## Theme
+
+System, Light or Dark from Settings. Stored as `localStorage.theme` (`light`/`dark`; absent = System) and applied before first paint by the inline script in `index.html`, which sets `data-theme` on `<html>`.
 
 ## Checks
 

@@ -1,6 +1,6 @@
+import { Settings } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 
-import { useAuth } from "@/auth/AuthContext"
 import { AppFrame } from "@/components/atoms/AppFrame"
 import { ErrorText } from "@/components/atoms/ErrorText"
 import { Heading } from "@/components/atoms/Heading"
@@ -12,7 +12,6 @@ import { Card } from "@/components/ui/card"
 import { useRaces } from "@/hooks/useRaces"
 
 export default function RacesPage() {
-  const { logout } = useAuth()
   const navigate = useNavigate()
   const { races, error, reload, createRace } = useRaces()
 
@@ -26,8 +25,10 @@ export default function RacesPage() {
         <Button variant="quiet" asChild>
           <Link to="/nutrition">Nutrition</Link>
         </Button>
-        <Button variant="quiet" onClick={logout}>
-          Log out
+        <Button variant="icon" size="icon" asChild>
+          <Link to="/settings" aria-label="Settings">
+            <Settings aria-hidden />
+          </Link>
         </Button>
       </header>
       <div className="grid gap-3">

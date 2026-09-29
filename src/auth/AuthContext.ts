@@ -6,9 +6,11 @@ export type AuthState = {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  /** Call a protected route: attaches bearer, logs out on 401. */
+  /** Revokes the refresh cookie on the server, then clears local state. */
+  logout: () => Promise<void>
+  /** Call a protected route: attaches bearer; on an expired-token 401 refreshes once and retries. */
   authFetch: <T>(path: string, init?: RequestInit) => Promise<T>
+  setUser: (user: User) => void
 }
 
 export const AuthContext = createContext<AuthState | null>(null)
