@@ -182,6 +182,17 @@
     font: inherit;
     font-variant-numeric: tabular-nums;
   }
+  input[type="date"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
   button {
     cursor: pointer;
   }

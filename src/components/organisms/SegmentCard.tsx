@@ -115,7 +115,7 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
           <Input
             id={`k-${s.id}`}
             className="px-2.5 sm:px-3.5"
-            inputMode="decimal"
+            inputMode="text"
             autoComplete="off"
             placeholder="15 km"
             aria-invalid={!distValid}
