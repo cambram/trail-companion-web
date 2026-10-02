@@ -8,6 +8,9 @@ services:
       # Backend URL, e.g. https://trail-companion-api.onrender.com
       - key: VITE_API_URL
         sync: false
+      # Must match FEATURE_REGISTRATION_ENABLED on trail-companion-api. Read at build time: redeploy after changing it.
+      - key: FEATURE_REGISTRATION_ENABLED
+        sync: false
     routes:
       - type: rewrite
         source: /*

@@ -5,7 +5,7 @@ Trail race planner UI. Register or log in against the TrailCompanion API, then p
 ## Run
 
 ```bash
-cp .env.example .env   # VITE_API_URL, default http://localhost:5170
+cp .env.example .env   # VITE_API_URL (default http://localhost:5170), FEATURE_REGISTRATION_ENABLED
 npm install
 npm run dev            # http://localhost:5173 (must match API Cors:AllowedOrigins)
 ```
@@ -56,6 +56,7 @@ System, Light or Dark from Settings. Stored as `localStorage.theme` (`light`/`da
 
 ```bash
 node --experimental-strip-types src/lib/planMath.check.ts   # totals, pace, ETA math
+node --experimental-strip-types src/lib/flags.check.ts      # feature flag parsing
 ```
 
 ## Editing
@@ -64,7 +65,7 @@ Race name, target and start time (hero) and segment fields save automatically (d
 
 ## Deploy
 
-Render static site (`render.yaml`). Client-side routes need an SPA rewrite: `public/_redirects` (`/* /index.html 200`) ships in `dist/`, and `render.yaml` declares the same rule. A service created by hand in the dashboard ignores `render.yaml`; add the rewrite under Redirects/Rewrites there or re-create it from the Blueprint. `VITE_API_URL` is set in the dashboard.
+Render static site (`render.yaml`). Client-side routes need an SPA rewrite: `public/_redirects` (`/* /index.html 200`) ships in `dist/`, and `render.yaml` declares the same rule. A service created by hand in the dashboard ignores `render.yaml`; add the rewrite under Redirects/Rewrites there or re-create it from the Blueprint. `VITE_API_URL` is set in the dashboard. `FEATURE_REGISTRATION_ENABLED` hides account creation when it is anything other than `true`. Unset means enabled. Vite reads it at **build** time, so changing it needs a redeploy. The API has its own variable with the same name, and the deploy must keep the two equal. The API enforces the flag either way.
 
 ## Not included
 

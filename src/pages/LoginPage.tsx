@@ -6,6 +6,7 @@ import { Heading } from "@/components/atoms/Heading"
 import { Subtitle } from "@/components/atoms/Subtitle"
 import { AuthForm } from "@/components/organisms/AuthForm"
 import { ApiError, RateLimitedError } from "@/lib/api"
+import { registrationEnabled } from "@/lib/features"
 
 // Map API statuses (trail-companion-api/docs/auth.md) to user-facing messages.
 function toLoginError(e: unknown) {
@@ -32,12 +33,14 @@ export default function LoginPage() {
         submitLabel="Log in"
         pendingLabel="Logging in..."
         footer={
-          <>
-            No account?{" "}
-            <Link to="/register" className="font-bold text-foreground">
-              Create one
-            </Link>
-          </>
+          registrationEnabled ? (
+            <>
+              No account?{" "}
+              <Link to="/register" className="font-bold text-foreground">
+                Create one
+              </Link>
+            </>
+          ) : undefined
         }
         onSubmit={(email, password) =>
           login(email, password).catch((e) => {
