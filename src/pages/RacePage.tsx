@@ -73,7 +73,7 @@ export default function RacePage() {
                   <AidStationCard
                     key={a.id}
                     station={a}
-                    canMoveUp={i > 0}
+                    canMoveUp={i > 1}
                     canMoveDown={i < race.segments.length - 1}
                     library={library}
                     onPatch={(patch) => patchAidStation(a.id, patch)}
@@ -92,16 +92,18 @@ export default function RacePage() {
                     onMoveItem={(itemId, d) => moveStationItem(a.id, itemId, d)}
                   />
                 ) : (
-                  <div className="flex justify-center">
-                    <Button
-                      variant="quiet"
-                      size="sm"
-                      className="rounded-full border border-dashed border-line px-3.5"
-                      onClick={() => run(() => addAidStation(s.id))}
-                    >
-                      + Aid station
-                    </Button>
-                  </div>
+                  i > 0 && (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="quiet"
+                        size="sm"
+                        className="rounded-full border border-dashed border-line px-3.5"
+                        onClick={() => run(() => addAidStation(s.id))}
+                      >
+                        + Aid station
+                      </Button>
+                    </div>
+                  )
                 )}
                 <SegmentCard
                   index={i}
