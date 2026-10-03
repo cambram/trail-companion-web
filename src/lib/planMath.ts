@@ -1,4 +1,4 @@
-import type { NutritionItem, NutritionType, RaceDetail, Segment } from "./racesApi"
+import type { NutritionItem, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -49,10 +49,17 @@ export const sizeUnit = (type: NutritionType) => (type === "Liquid" ? "ml" : typ
 export const sizeText = (n: Pick<NutritionItem, "type" | "size">) =>
   n.size === null ? "" : `${n.size} ${sizeUnit(n.type)}`
 
-export const planned = (s: Segment) => s.items.reduce((a, i) => a + (i.carbs ?? 0), 0)
+const carbsOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.carbs ?? 0), 0)
 
-export const fluid = (s: Segment) =>
-  s.items.reduce((a, i) => a + (i.type === "Liquid" ? (i.size ?? 0) : 0), 0)
+const fluidOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.type === "Liquid" ? (i.size ?? 0) : 0), 0)
+
+/** Carbs eaten at the aid station before this segment. */
+export const stationCarbs = (s: Segment) => carbsOf(s.aidStation?.items ?? [])
+
+/** Segment items plus the aid station before it: station intake counts toward the following segment. */
+export const planned = (s: Segment) => carbsOf(s.items) + stationCarbs(s)
+
+export const fluid = (s: Segment) => fluidOf(s.items) + fluidOf(s.aidStation?.items ?? [])
 
 export const needed = (target: number, s: Segment) => Math.round((s.duration / 60) * (target || 0))
 

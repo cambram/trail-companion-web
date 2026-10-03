@@ -20,10 +20,25 @@ export type NutritionItem = {
   calcium: number | null
 }
 
-export type Item = NutritionItem & {
-  segmentId: string
+export type PlannedItem = NutritionItem & {
   nutritionItemId: string
   position: number
+}
+
+export type Item = PlannedItem & { segmentId: string }
+
+export type AidStationItem = PlannedItem & { aidStationId: string }
+
+export type KitCertainty = "Planned" | "Maybe"
+
+export type KitEntry = { label: string; certainty: KitCertainty }
+
+export type AidStation = {
+  id: string
+  name: string
+  notes: string
+  kit: KitEntry[]
+  items: AidStationItem[]
 }
 
 export type Segment = {
@@ -34,6 +49,7 @@ export type Segment = {
   distance: number | null
   notes: string
   items: Item[]
+  aidStation: AidStation | null
 }
 
 export type RaceDetail = Race & { segments: Segment[] }
@@ -41,6 +57,8 @@ export type RaceDetail = Race & { segments: Segment[] }
 export type SegmentRequest = { name: string; duration: number; distance?: number | null; notes?: string }
 export type NutritionItemRequest = Omit<NutritionItem, "id">
 export type ItemRequest = { nutritionItemId: string }
+export type AidStationRequest = { name: string; notes: string; kit: KitEntry[] }
+type AidStationResponse = Omit<AidStation, "items"> & { segmentId: string }
 
 type Fetch = AuthState["authFetch"]
 
@@ -57,9 +75,9 @@ export const racesApi = (f: Fetch) => ({
   deleteRace: (id: string) => f<void>(`/api/races/${id}`, json("DELETE")),
 
   createSegment: (raceId: string, body: SegmentRequest) =>
-    f<Omit<Segment, "items">>(`/api/races/${raceId}/segments`, json("POST", body)),
+    f<Omit<Segment, "items" | "aidStation">>(`/api/races/${raceId}/segments`, json("POST", body)),
   updateSegment: (raceId: string, id: string, body: SegmentRequest) =>
-    f<Omit<Segment, "items">>(`/api/races/${raceId}/segments/${id}`, json("PUT", body)),
+    f<Omit<Segment, "items" | "aidStation">>(`/api/races/${raceId}/segments/${id}`, json("PUT", body)),
   deleteSegment: (raceId: string, id: string) =>
     f<void>(`/api/races/${raceId}/segments/${id}`, json("DELETE")),
 
@@ -78,4 +96,20 @@ export const racesApi = (f: Fetch) => ({
     f<Item>(`/api/races/${raceId}/segments/${segmentId}/items`, json("POST", { nutritionItemId })),
   deleteItem: (raceId: string, segmentId: string, id: string) =>
     f<void>(`/api/races/${raceId}/segments/${segmentId}/items/${id}`, json("DELETE")),
+
+  createAidStation: (raceId: string, body: { segmentId: string; name: string }) =>
+    f<AidStationResponse>(`/api/races/${raceId}/aid-stations`, json("POST", body)),
+  updateAidStation: (raceId: string, id: string, body: AidStationRequest) =>
+    f<AidStationResponse>(`/api/races/${raceId}/aid-stations/${id}`, json("PUT", body)),
+  deleteAidStation: (raceId: string, id: string) =>
+    f<void>(`/api/races/${raceId}/aid-stations/${id}`, json("DELETE")),
+  moveAidStation: (raceId: string, id: string, segmentId: string) =>
+    f<void>(`/api/races/${raceId}/aid-stations/${id}/move`, json("PUT", { segmentId })),
+
+  createStationItem: (raceId: string, aidStationId: string, nutritionItemId: string) =>
+    f<AidStationItem>(`/api/races/${raceId}/aid-stations/${aidStationId}/items`, json("POST", { nutritionItemId })),
+  deleteStationItem: (raceId: string, aidStationId: string, id: string) =>
+    f<void>(`/api/races/${raceId}/aid-stations/${aidStationId}/items/${id}`, json("DELETE")),
+  reorderStationItems: (raceId: string, aidStationId: string, ids: string[]) =>
+    f<void>(`/api/races/${raceId}/aid-stations/${aidStationId}/items/order`, json("PUT", { ids })),
 })

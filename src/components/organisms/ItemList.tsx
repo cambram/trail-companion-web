@@ -2,21 +2,24 @@ import { ChevronDown, ChevronUp, X } from "lucide-react"
 
 import { AddNutrition } from "@/components/molecules/AddNutrition"
 import { Button } from "@/components/ui/button"
-import type { Item, NutritionItem } from "@/lib/racesApi"
+import type { NutritionItem, PlannedItem } from "@/lib/racesApi"
 
 type Props = {
-  items: Item[]
+  items: PlannedItem[]
   library: NutritionItem[] | undefined
+  heading?: string
+  lead?: React.ReactNode
   onAdd: (nutritionItemId: string) => Promise<void>
   onDelete: (id: string) => void
   onMove: (id: string, d: number) => void
 }
 
-export function ItemList({ items, library, onAdd, onDelete, onMove }: Props) {
+export function ItemList({ items, library, heading = "Nutrition, in order", lead, onAdd, onDelete, onMove }: Props) {
   return (
     <div>
-      <p className="mb-2 text-xs font-extrabold text-muted-foreground">Nutrition, in order</p>
-      {items.length === 0 && (
+      <p className="mb-2 text-xs font-extrabold text-muted-foreground">{heading}</p>
+      {lead}
+      {items.length === 0 && !lead && (
         <p className="border-t border-line py-2 text-[0.8125rem] text-muted-foreground">Nothing added yet.</p>
       )}
       {items.map((it, k) => (
