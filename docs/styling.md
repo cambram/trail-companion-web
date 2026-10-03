@@ -426,6 +426,13 @@ For repeated sections (for example segments), each card opens with a header row 
 2. **Inline title input** that grows.
 3. **Up/down icon buttons** for reordering.
 
+### Aid station card
+
+- Same white card as a segment, full width. Identity comes from the lucide `Tent` icon in the 38px number slot, never from colour or an emoji. No ETA, time, distance, pace or progress rail: a stop has no duration of its own.
+- Kit certainty pills: `Planned` is solid `--btn`/`--btn-ink`; `Maybe` is a dashed `--muted` outline with `--ink-soft` text. Neutral, not status colour.
+- The segment after a station shows one muted, read-only row at the top of its item list: `Tent` icon, "At {station}", station carbs. The segment's progress bar stays one colour; its numbers include station carbs.
+- Empty gaps between segments show a quiet dashed "+ Aid station" pill.
+
 ### 6.11 List rows
 
 Rows inside a card are separated by hairlines, not gaps.

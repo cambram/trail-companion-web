@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Tent } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { StatusPill } from "@/components/atoms/StatusPill"
@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fluid, fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDistance, parseDur, planned } from "@/lib/planMath"
+import { fluid, fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDistance, parseDur, planned, stationCarbs } from "@/lib/planMath"
 import type { NutritionItem, Segment } from "@/lib/racesApi"
 
 type Props = {
@@ -146,7 +146,22 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
         />
       </Field>
 
-      <ItemList items={s.items} library={library} onAdd={onAddItem} onDelete={onDeleteItem} onMove={onMoveItem} />
+      <ItemList
+        items={s.items}
+        library={library}
+        onAdd={onAddItem}
+        onDelete={onDeleteItem}
+        onMove={onMoveItem}
+        lead={
+          s.aidStation && (
+            <div className="flex items-center gap-2 border-t border-line py-2 text-[0.95rem] font-semibold text-muted-foreground">
+              <Tent className="size-4 flex-none" aria-hidden />
+              <span className="min-w-0 flex-1 truncate">At {s.aidStation.name.trim() || "aid station"}</span>
+              <span className="font-extrabold whitespace-nowrap tabular-nums">{stationCarbs(s)} g</span>
+            </div>
+          )
+        }
+      />
 
       <StatRail planned={p} need={n}>
         {s.duration ? (
