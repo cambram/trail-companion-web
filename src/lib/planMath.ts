@@ -31,8 +31,24 @@ export function parseDistance(v: string): number | null {
   return /^(\d+\.?\d*|\.\d+)$/.test(v) ? Number(v) : null
 }
 
-export const paceText = (s: Pick<Segment, "duration" | "distance">) =>
-  s.duration && s.distance && s.distance > 0 ? `${fmtPace(s.duration / s.distance)} /km` : "– /km"
+export const paceText = (duration: number, km: number | null) =>
+  duration && km && km > 0 ? `${fmtPace(duration / km)} /km` : "– /km"
+
+const roundKm = (km: number) => Math.round(km * 100) / 100
+
+export const fmtKm = (km: number) => `${roundKm(km)} km`
+
+export type Leg = { start: number; end: number | null; length: number | null }
+
+/** Each segment starts at the last entered end mark before it, 0 km at the start line. Length is null when the end is blank. */
+export function legs(segments: Pick<Segment, "endKm">[]): Leg[] {
+  let last = 0
+  return segments.map(({ endKm }) => {
+    const start = last
+    if (endKm !== null) last = endKm
+    return { start, end: endKm, length: endKm === null ? null : roundKm(endKm - start) }
+  })
+}
 
 export const NUTRITION_TYPES: NutritionType[] = ["Gel", "Liquid", "Solid", "Pill"]
 
@@ -69,7 +85,7 @@ export function raceTotals(r: RaceDetail) {
   return r.segments.reduce(
     (t, s) => ({
       duration: t.duration + (s.duration || 0),
-      distance: t.distance + (s.distance || 0),
+      distance: Math.max(t.distance, s.endKm ?? 0),
       planned: t.planned + planned(s),
       need: t.need + needed(r.target, s),
       fluid: t.fluid + fluid(s),

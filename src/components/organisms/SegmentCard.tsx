@@ -10,8 +10,9 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fluid, fmtClock, fmtDur, fmtHM, needed, onTarget, paceText, parseDistance, parseDur, planned, stationCarbs } from "@/lib/planMath"
+import { fluid, fmtClock, fmtDur, fmtHM, fmtKm, needed, onTarget, paceText, parseDistance, parseDur, planned, stationCarbs, type Leg } from "@/lib/planMath"
 import type { NutritionItem, Segment } from "@/lib/racesApi"
+import { cn } from "@/lib/utils"
 
 type Props = {
   index: number
@@ -19,6 +20,7 @@ type Props = {
   segment: Segment
   target: number
   eta: number | null
+  leg: Leg
   focusOnMount: boolean
   onPatch: (patch: SegmentPatch) => void
   onDelete: () => void
@@ -38,12 +40,13 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   )
 }
 
-export function SegmentCard({ index, count, segment: s, target, eta, focusOnMount, library, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
+export function SegmentCard({ index, count, segment: s, target, eta, leg, focusOnMount, library, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
   const [durText, setDurText] = useState(s.duration ? fmtHM(s.duration) : "")
-  const [distText, setDistText] = useState(s.distance ? String(s.distance) : "")
+  const [endText, setEndText] = useState(s.endKm !== null ? String(s.endKm) : "")
   const nameRef = useRef<HTMLInputElement>(null)
   const durValid = parseDur(durText) !== null
-  const distValid = parseDistance(distText) !== null
+  const endValid = parseDistance(endText) !== null
+  const backwards = leg.length !== null && leg.length <= 0
 
   useEffect(() => {
     if (!focusOnMount) return
@@ -111,28 +114,40 @@ export function SegmentCard({ index, count, segment: s, target, eta, focusOnMoun
             onBlur={() => durValid && setDurText(s.duration ? fmtHM(s.duration) : "")}
           />
         </Field>
-        <Field label="Distance" id={`k-${s.id}`}>
+        <Field label="Ends at (km)" id={`k-${s.id}`}>
           <Input
             id={`k-${s.id}`}
             className="px-2.5 sm:px-3.5"
             inputMode="text"
             autoComplete="off"
-            placeholder="15 km"
-            aria-invalid={!distValid}
-            value={distText}
+            placeholder="e.g. 20"
+            aria-invalid={!endValid || backwards}
+            aria-describedby={`r-${s.id}`}
+            value={endText}
             onChange={(e) => {
-              setDistText(e.target.value)
+              setEndText(e.target.value)
               const v = parseDistance(e.target.value)
-              if (v !== null) onPatch({ distance: v })
+              if (v !== null) onPatch({ endKm: e.target.value.trim() ? v : null })
             }}
           />
         </Field>
         <div className="grid gap-1.5">
           <Label>Pace</Label>
           <div className="flex min-h-[46px] items-center rounded-md bg-secondary px-2.5 font-bold whitespace-nowrap sm:px-3.5">
-            {paceText(s)}
+            {paceText(s.duration, leg.length)}
           </div>
         </div>
+      </div>
+
+      <div
+        id={`r-${s.id}`}
+        className={cn("text-[0.8125rem] font-semibold", backwards ? "text-red" : "text-muted-foreground")}
+      >
+        {leg.end === null
+          ? `Starts at ${fmtKm(leg.start)}`
+          : backwards
+            ? `Ends at or before its start (${fmtKm(leg.start)})`
+            : `${fmtKm(leg.start)} → ${fmtKm(leg.end)} · ${fmtKm(leg.length!)}`}
       </div>
 
       <Field label="Pacing plan" id={`p-${s.id}`}>

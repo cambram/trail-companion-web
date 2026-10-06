@@ -46,7 +46,7 @@ export type Segment = {
   position: number
   name: string
   duration: number
-  distance: number | null
+  endKm: number | null
   notes: string
   items: Item[]
   aidStation: AidStation | null
@@ -54,7 +54,7 @@ export type Segment = {
 
 export type RaceDetail = Race & { segments: Segment[] }
 
-export type SegmentRequest = { name: string; duration: number; distance?: number | null; notes?: string }
+export type SegmentRequest = { name: string; duration: number; endKm?: number | null; notes?: string }
 export type NutritionItemRequest = Omit<NutritionItem, "id">
 export type ItemRequest = { nutritionItemId: string }
 export type AidStationRequest = { name: string; notes: string; kit: KitEntry[] }

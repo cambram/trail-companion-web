@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card"
 import { useNutrition } from "@/hooks/useNutrition"
 import { useRace } from "@/hooks/useRace"
 import { ApiError } from "@/lib/api"
-import { etas } from "@/lib/planMath"
+import { etas, legs } from "@/lib/planMath"
 
 export default function RacePage() {
   const { id = "" } = useParams()
@@ -30,6 +30,7 @@ export default function RacePage() {
   if (loadError instanceof ApiError && loadError.status === 404) return <Navigate to="/" replace />
 
   const arrivals = race ? etas(race) : []
+  const spans = race ? legs(race.segments) : []
 
   const run = async (fn: () => Promise<unknown>) => {
     setActionError(undefined)
@@ -111,6 +112,7 @@ export default function RacePage() {
                   segment={s}
                   target={race.target}
                   eta={arrivals[i]}
+                  leg={spans[i]}
                   focusOnMount={s.id === newId}
                   library={library}
                   onPatch={(patch) => patchSegment(s.id, patch)}

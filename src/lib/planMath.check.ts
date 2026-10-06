@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 
-import { clockToMin, etas, fluid, fmtClock, fmtDur, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs } from "./planMath.ts"
+import { clockToMin, etas, fluid, fmtClock, fmtDur, fmtKm, legs, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs } from "./planMath.ts"
 import type { AidStation, Item, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi.ts"
 
 const item = (carbs: number | null, type: NutritionType = "Gel", size: number | null = null): Item => ({
@@ -20,12 +20,12 @@ const item = (carbs: number | null, type: NutritionType = "Gel", size: number | 
   calcium: null,
 })
 
-const seg = (duration: number, distance: number, items: Item[]): Segment => ({
+const seg = (duration: number, endKm: number | null, items: Item[]): Segment => ({
   id: "",
   position: 0,
   name: "",
   duration,
-  distance,
+  endKm,
   notes: "",
   items,
   aidStation: null,
@@ -40,7 +40,7 @@ const race: RaceDetail = {
   createdAtUtc: "",
   segments: [
     seg(90, 11, [item(40), item(25), item(40)]),
-    seg(180, 15, [item(40), item(27), item(24), item(40), item(null), item(50, "Liquid", 500)]),
+    seg(180, 26, [item(40), item(27), item(24), item(40), item(null), item(50, "Liquid", 500)]),
   ],
 }
 
@@ -53,7 +53,7 @@ assert.equal(sizeUnit("Solid"), "g")
 assert.equal(sizeText({ type: "Liquid", size: 500 }), "500 ml")
 assert.equal(sizeText({ type: "Gel", size: null }), "")
 assert.equal(fmtDur(270), "4h30")
-assert.equal(paceText(race.segments[0]), "8:11 /km")
+assert.equal(paceText(90, 11), "8:11 /km")
 assert.deepEqual(etas(race).map((m) => fmtClock(m!)), ["07:30", "10:30"])
 assert.deepEqual(etas({ ...race, startTime: null }), [null, null])
 assert.equal(fmtClock(clockToMin("23:00") + 90), "00:30 +1d")
@@ -93,6 +93,36 @@ assert.deepEqual(
   etas(swapped).map((m) => fmtClock(m!)),
   ["09:00", "10:30"],
   "reordering segments carries stations and ETAs follow durations only",
+)
+
+const at = (...ends: (number | null)[]) => legs(ends.map((endKm) => ({ endKm })))
+assert.deepEqual(
+  at(10, 20, 32),
+  [
+    { start: 0, end: 10, length: 10 },
+    { start: 10, end: 20, length: 10 },
+    { start: 20, end: 32, length: 12 },
+  ],
+  "worked example from the spec",
+)
+assert.deepEqual(at(), [])
+assert.deepEqual(
+  at(10, null, 32).map((l) => [l.start, l.length]),
+  [[0, 10], [10, null], [10, 22]],
+  "blank end has no length; the next segment starts at the last entered end",
+)
+assert.deepEqual(at(10, 21, 32).map((l) => l.length), [10, 11, 11], "editing one end changes only it and the next segment")
+assert.equal(at(10, 20.1)[1].length, 10.1, "no float noise")
+assert.equal(fmtKm(at(10, 20.1)[1].length!), "10.1 km")
+assert.equal(fmtKm(32), "32 km")
+assert.equal(at(20, 10)[1].length, -10, "out of order stays negative so the card can flag it")
+assert.equal(paceText(60, -10), "– /km")
+assert.equal(paceText(60, null), "– /km")
+assert.equal(paceText(0, 10), "– /km")
+assert.equal(
+  raceTotals({ ...race, segments: [seg(0, 32, []), seg(0, 20, []), seg(0, null, [])] }).distance,
+  32,
+  "race distance is the furthest mark, even out of order",
 )
 
 console.log("planMath ok")
