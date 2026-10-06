@@ -11,7 +11,7 @@ import { registrationEnabled } from "@/lib/features"
 // Map API statuses (trail-companion-api/docs/auth.md) to user-facing messages.
 function toLoginError(e: unknown) {
   if (e instanceof ApiError) {
-    if (e.status === 401) return new Error("Invalid email or password")
+    if (e.status === 401) return new Error("Invalid username or password")
     if (e.status === 429) return new RateLimitedError("Too many attempts, try again in a minute")
     if (e.validationErrors.length) return new Error(e.validationErrors.map((v) => v.message).join(" "))
   }
@@ -42,8 +42,8 @@ export default function LoginPage() {
             </>
           ) : undefined
         }
-        onSubmit={(email, password) =>
-          login(email, password).catch((e) => {
+        onSubmit={(username, password) =>
+          login(username, password).catch((e) => {
             throw toLoginError(e)
           })
         }

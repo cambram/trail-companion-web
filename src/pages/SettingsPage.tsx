@@ -78,10 +78,10 @@ export default function SettingsPage() {
   const [confirm, setConfirm] = useState("")
   const password = useAction("Could not change your password")
 
-  const [typedEmail, setTypedEmail] = useState("")
+  const [typedUsername, setTypedUsername] = useState("")
   const [deletePassword, setDeletePassword] = useState("")
   const removal = useAction("Could not delete your account")
-  const canDelete = typedEmail.trim().toLowerCase() === user.email && deletePassword.length > 0
+  const canDelete = typedUsername.trim().toLowerCase() === user.username && deletePassword.length > 0
 
   return (
     <AppFrame>
@@ -102,8 +102,8 @@ export default function SettingsPage() {
           <CardTitle>Account</CardTitle>
           <dl className="grid gap-2 text-[0.8125rem]">
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="min-w-0 truncate font-semibold">{user.email}</dd>
+              <dt className="text-muted-foreground">Username</dt>
+              <dd className="min-w-0 truncate font-semibold">{user.username}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Member since</dt>
@@ -236,11 +236,14 @@ export default function SettingsPage() {
             }}
           >
             <FormField
-              label={`Type ${user.email} to confirm`}
-              type="email"
+              label={`Type ${user.username} to confirm`}
+              type="text"
               autoComplete="off"
-              value={typedEmail}
-              onChange={(e) => setTypedEmail(e.target.value)}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={typedUsername}
+              onChange={(e) => setTypedUsername(e.target.value)}
             />
             <FormField
               label="Password"

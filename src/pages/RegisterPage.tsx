@@ -12,7 +12,7 @@ import { registrationEnabled } from "@/lib/features"
 function toRegisterError(e: unknown) {
   if (e instanceof ApiError) {
     if (e.status === 403) return new Error("Account creation is currently closed")
-    if (e.status === 409) return new Error("An account with this email already exists")
+    if (e.status === 409) return new Error("That username is taken")
     if (e.validationErrors.length) return new Error(e.validationErrors.map((v) => v.message).join(" "))
   }
   return new Error("Could not create account")
@@ -55,14 +55,14 @@ export default function RegisterPage() {
             </Link>
           </>
         }
-        onSubmit={async (email, password) => {
+        onSubmit={async (username, password) => {
           try {
-            await register(email, password)
+            await register(username, password)
           } catch (e) {
             throw toRegisterError(e)
           }
           try {
-            await login(email, password)
+            await login(username, password)
           } catch (e) {
             if (e instanceof ApiError && e.status === 429) throw new RateLimitedError("Account created. Log in in a minute")
             throw new Error("Account created. Please log in")

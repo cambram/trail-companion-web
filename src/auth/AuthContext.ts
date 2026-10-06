@@ -5,7 +5,7 @@ import type { User } from "@/lib/authApi"
 export type AuthState = {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
   /** Revokes the refresh cookie on the server, then clears local state. */
   logout: () => Promise<void>
   /** Call a protected route: attaches bearer; on an expired-token 401 refreshes once and retries. */

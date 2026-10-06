@@ -13,11 +13,11 @@ type AuthFormProps = {
   newPassword?: boolean
   footer?: React.ReactNode
   /** Throw an Error with a user-facing message on failure. RateLimitedError starts a cooldown. */
-  onSubmit: (email: string, password: string) => Promise<void>
+  onSubmit: (username: string, password: string) => Promise<void>
 }
 
 export function AuthForm({ title, submitLabel, pendingLabel, newPassword, footer, onSubmit }: AuthFormProps) {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string>()
   const [pending, setPending] = useState(false)
@@ -34,7 +34,7 @@ export function AuthForm({ title, submitLabel, pendingLabel, newPassword, footer
     setError(undefined)
     setPending(true)
     try {
-      await onSubmit(email, password)
+      await onSubmit(username, password)
     } catch (err) {
       if (err instanceof RateLimitedError) setCooldown(err.seconds)
       setError(err instanceof Error ? err.message : "Something went wrong")
@@ -51,13 +51,16 @@ export function AuthForm({ title, submitLabel, pendingLabel, newPassword, footer
       <CardContent>
         <form onSubmit={handleSubmit} className="grid gap-3">
           <FormField
-            label="Email"
-            type="email"
-            autoComplete="email"
+            label="Username"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             required
-            maxLength={320}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            maxLength={32}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
           <FormField
             label="Password"

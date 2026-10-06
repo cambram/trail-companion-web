@@ -4,22 +4,22 @@ import { apiFetch } from "@/lib/api"
 export type Session = { accessToken: string; expiresAtUtc: string }
 export type User = {
   id: string
-  email: string
+  username: string
   firstName: string | null
   lastName: string | null
   createdAtUtc: string
 }
 
-export const login = (email: string, password: string) =>
+export const login = (username: string, password: string) =>
   apiFetch<Session>("/api/users/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   })
 
-export const register = (email: string, password: string) =>
+export const register = (username: string, password: string) =>
   apiFetch<User>("/api/users/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   })
 
 /** The httpOnly cookie is the credential; no bearer needed. */

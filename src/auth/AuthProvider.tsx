@@ -83,8 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, refresh])
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      apply(await loginRequest(email, password))
+    async (username: string, password: string) => {
+      apply(await loginRequest(username, password))
       await loadUser()
     },
     [apply, loadUser],
