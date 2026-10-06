@@ -27,10 +27,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!s) setUser(null)
   }, [])
 
-  // Every caller shares one in-flight refresh: presenting a rotated cookie twice revokes the whole session.
+  // Every caller shares one in-flight refresh, and the Web Lock serialises refreshes across tabs:
+  // presenting a rotated cookie twice revokes the whole session. A tab that waited adopts the
+  // session another tab just stored instead of refreshing again.
   // Only a 401 ends the session; offline or 429 keeps it so a later call can try again.
   const refresh = useCallback(() => {
-    refreshing.current ??= refreshRequest()
+    refreshing.current ??= navigator.locks
+      .request("trail-companion-refresh", async () => {
+        const stored = loadSession()
+        if (stored && stored.accessToken !== sessionRef.current?.accessToken && msUntilExpiry(stored) > 0) {
+          return stored
+        }
+        return refreshRequest()
+      })
       .then((s) => {
         apply(s)
         return s
