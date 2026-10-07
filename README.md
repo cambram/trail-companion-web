@@ -34,6 +34,8 @@ Follows `trail-companion-api/docs/auth.md`: 15 min JWT bearer plus a 30-day refr
 - On reload with an expired stored token, the first call refreshes via the cookie, so the user stays logged in.
 - `logout()` calls `POST /api/users/logout` (revokes the cookie), then clears local state.
 
+- Refreshes are serialised across tabs with `navigator.locks` (`trail-companion-refresh`); a waiting tab adopts the session another tab stored. The static host sends a strict CSP (`render.yaml` `headers`); no inline scripts. The theme bootstrap lives in `public/theme.js`.
+
 Use `useAuth().authFetch(path)` for protected calls.
 
 Login 429 disables the button for 60s (fixed-window limit).

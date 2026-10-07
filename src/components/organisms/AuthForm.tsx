@@ -66,6 +66,7 @@ export function AuthForm({ title, submitLabel, pendingLabel, newPassword, footer
             label="Password"
             type="password"
             autoComplete={newPassword ? "new-password" : "current-password"}
+            maxLength={128}
             required
             minLength={newPassword ? 8 : undefined}
             value={password}

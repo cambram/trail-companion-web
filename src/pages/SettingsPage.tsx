@@ -187,6 +187,7 @@ export default function SettingsPage() {
               label="Current password"
               type="password"
               autoComplete="current-password"
+              maxLength={128}
               required
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
@@ -195,6 +196,7 @@ export default function SettingsPage() {
               label="New password"
               type="password"
               autoComplete="new-password"
+              maxLength={128}
               required
               minLength={8}
               value={next}
@@ -204,6 +206,7 @@ export default function SettingsPage() {
               label="Confirm new password"
               type="password"
               autoComplete="new-password"
+              maxLength={128}
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
@@ -249,6 +252,7 @@ export default function SettingsPage() {
               label="Password"
               type="password"
               autoComplete="current-password"
+              maxLength={128}
               value={deletePassword}
               onChange={(e) => setDeletePassword(e.target.value)}
             />
