@@ -1,6 +1,16 @@
 import type { AuthState } from "@/auth/AuthContext"
 
-export type Race = { id: string; name: string; target: number; startTime: string | null; raceDate: string | null; createdAtUtc: string }
+export type RaceRole = "Owner" | "Crew"
+
+export type Race = {
+  id: string
+  name: string
+  target: number
+  startTime: string | null
+  raceDate: string | null
+  createdAtUtc: string
+  role: RaceRole
+}
 
 export type RaceRequest = Pick<Race, "name" | "target" | "startTime" | "raceDate">
 
@@ -52,7 +62,9 @@ export type Segment = {
   aidStation: AidStation | null
 }
 
-export type RaceDetail = Race & { segments: Segment[] }
+export type RaceDetail = Race & { segments: Segment[]; pin: string | null }
+
+export type CrewMember = { appUserId: string; displayName: string; joinedAtUtc: string }
 
 export type SegmentRequest = { name: string; duration: number; endKm?: number | null; notes?: string }
 export type NutritionItemRequest = Omit<NutritionItem, "id">
@@ -73,6 +85,11 @@ export const racesApi = (f: Fetch) => ({
   getRace: (id: string) => f<RaceDetail>(`/api/races/${id}`),
   updateRace: (id: string, body: RaceRequest) => f<Race>(`/api/races/${id}`, json("PUT", body)),
   deleteRace: (id: string) => f<void>(`/api/races/${id}`, json("DELETE")),
+  joinRace: (pin: string) => f<Race>("/api/races/join", json("POST", { pin })),
+  regeneratePin: (id: string) => f<{ pin: string }>(`/api/races/${id}/pin`, json("POST")),
+  listCrew: (raceId: string) => f<CrewMember[]>(`/api/races/${raceId}/crew`),
+  removeCrew: (raceId: string, appUserId: string) =>
+    f<void>(`/api/races/${raceId}/crew/${appUserId}`, json("DELETE")),
 
   createSegment: (raceId: string, body: SegmentRequest) =>
     f<Omit<Segment, "items" | "aidStation">>(`/api/races/${raceId}/segments`, json("POST", body)),

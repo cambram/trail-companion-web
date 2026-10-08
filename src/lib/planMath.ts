@@ -1,4 +1,4 @@
-import type { NutritionItem, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi"
+import type { AidStation, Item, NutritionItem, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -115,4 +115,15 @@ export function etas(r: Pick<RaceDetail, "startTime" | "segments">) {
   if (!r.startTime) return r.segments.map(() => null)
   let t = clockToMin(r.startTime)
   return r.segments.map((s) => (t += s.duration || 0))
+}
+
+export type CrewStop = { station: AidStation; eta: number | null; packNext: Item[] }
+
+/** Aid stations in race order with planned arrival and what goes in the vest for the segment after. */
+export function crewStops(r: Pick<RaceDetail, "startTime" | "segments">): CrewStop[] {
+  const arrivals = etas(r)
+  const start = r.startTime ? clockToMin(r.startTime) : null
+  return r.segments.flatMap((s, i) =>
+    s.aidStation ? [{ station: s.aidStation, eta: i === 0 ? start : arrivals[i - 1], packNext: s.items }] : [],
+  )
 }
