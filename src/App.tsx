@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router"
 
 import { ProtectedRoute } from "@/auth/ProtectedRoute"
+import JoinPage from "@/pages/JoinPage"
 import LoginPage from "@/pages/LoginPage"
 import NutritionPage from "@/pages/NutritionPage"
 import RegisterPage from "@/pages/RegisterPage"
@@ -16,6 +17,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<RacesPage />} />
         <Route path="/races/:id" element={<RacePage />} />
+        <Route path="/join" element={<JoinPage />} />
+        <Route path="/join/:pin" element={<JoinPage />} />
         <Route path="/nutrition" element={<NutritionPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
