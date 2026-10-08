@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 
-import { clockToMin, crewStops, etas, fluid, fmtClock, fmtDur, fmtKm, legs, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs } from "./planMath.ts"
-import type { AidStation, Item, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi.ts"
+import { checkpoints, clockToMin, crewStops, etas, fluid, fmtClock, fmtDur, fmtInstant, fmtKm, lastRecorded, legs, nearestInstant, nextCheckpoint, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs, timeline, zonedDate, zonedToMs } from "./planMath.ts"
+import type { AidStation, AidStationItem, Item, NutritionType, PlannedItem, RaceDetail, Run, Segment } from "./racesApi.ts"
 
 const item = (carbs: number | null, type: NutritionType = "Gel", size: number | null = null): Item => ({
   id: "",
@@ -156,6 +156,96 @@ assert.equal(
     "a station before the first segment is at the start time",
   )
   assert.deepEqual(crewStops({ startTime: "06:00", segments: [] }), [])
+}
+
+const JHB = "Africa/Johannesburg"
+const inst = (h: number, m = 0) => Date.UTC(2026, 9, 11, h, m)
+
+const stationAt = (id: string, name: string, kit: AidStation["kit"] = [], items: AidStationItem[] = []): AidStation => ({
+  id,
+  name,
+  notes: "",
+  kit,
+  items,
+})
+
+const utct = (km: (number | null)[] = [18, 30, 44, 55]): Segment[] => [
+  { ...seg(180, km[0], []), id: "s1" },
+  {
+    ...seg(120, km[1], [{ ...item(40), name: "Gel" }]),
+    id: "s2",
+    aidStation: stationAt(
+      "as1",
+      "AS1",
+      [
+        { label: "Socks", certainty: "Planned" },
+        { label: "Cap", certainty: "Maybe" },
+      ],
+      [{ ...item(null), name: "Coke", aidStationId: "as1" }],
+    ),
+  },
+  { ...seg(180, km[2], []), id: "s3", aidStation: stationAt("as2", "AS2") },
+  { ...seg(180, km[3], []), id: "s4", aidStation: stationAt("as3", "AS3") },
+]
+
+const runOf = (arrivals: [string, number][], startMs = inst(4)): Pick<Run, "startedAtUtc" | "arrivals"> => ({
+  startedAtUtc: new Date(startMs).toISOString(),
+  arrivals: arrivals.map(([checkpoint, ms]) => ({ checkpoint, arrivedAtUtc: new Date(ms).toISOString() })),
+})
+
+{
+  assert.equal(fmtInstant(inst(4), JHB), "06:00")
+  assert.equal(fmtInstant(Date.UTC(2026, 9, 10, 22, 0), JHB), "00:00", "midnight is 00:00, never 24:00")
+  assert.equal(zonedDate(Date.UTC(2026, 9, 10, 22, 0), JHB), "2026-10-11")
+  assert.equal(zonedDate(Date.UTC(2026, 9, 10, 21, 59), JHB), "2026-10-10")
+  assert.equal(zonedToMs("2026-10-11", "06:00", JHB), inst(4))
+  assert.equal(zonedToMs("2026-07-01", "12:00", "America/New_York"), Date.UTC(2026, 6, 1, 16, 0), "works across DST zones")
+
+  const lateNight = zonedToMs("2026-10-11", "23:50", JHB)
+  assert.equal(nearestInstant(lateNight, "00:10", JHB), zonedToMs("2026-10-12", "00:10", JHB), "a time typed after midnight lands on the next day")
+  assert.equal(nearestInstant(lateNight, "23:55", JHB), zonedToMs("2026-10-11", "23:55", JHB))
+}
+
+{
+  const cps = checkpoints(utct())
+  assert.deepEqual(
+    cps.map((c) => [c.key, c.index, c.name, c.plannedMin, c.km]),
+    [
+      ["as1", 0, "AS1", 180, 18],
+      ["as2", 1, "AS2", 300, 30],
+      ["as3", 2, "AS3", 480, 44],
+      ["finish", 3, "Finish", 660, 55],
+    ],
+    "a station arrives where the segment before it ends; the finish is last",
+  )
+  assert.equal(cps[0].stationId, "as1")
+  assert.equal(cps[3].stationId, null)
+
+  const atStart = checkpoints([{ ...seg(60, null, []), aidStation: stationAt("x", "X") }, seg(60, null, [])])
+  assert.deepEqual(
+    atStart.map((c) => [c.key, c.plannedMin, c.km]),
+    [
+      ["x", 0, 0],
+      ["finish", 120, null],
+    ],
+    "a station before the first segment arrives at the start",
+  )
+  assert.deepEqual(checkpoints([seg(60, 5, [])]).map((c) => [c.key, c.plannedMin, c.km]), [["finish", 60, 5]])
+  assert.deepEqual(checkpoints([]).map((c) => [c.key, c.plannedMin, c.km]), [["finish", 0, null]])
+
+  assert.equal(lastRecorded(cps, runOf([])), null)
+  assert.equal(nextCheckpoint(cps, runOf([]))!.key, "as1")
+  assert.deepEqual(lastRecorded(cps, runOf([["as2", inst(9, 10)]])), { index: 1, ms: inst(9, 10) })
+  assert.equal(nextCheckpoint(cps, runOf([["as2", inst(9, 10)]]))!.key, "as3", "a missed station is not offered again")
+  assert.equal(nextCheckpoint(cps, runOf([["finish", inst(15)]])), null)
+  assert.equal(lastRecorded(cps, runOf([["gone", inst(9)]])), null, "an arrival for a deleted station is ignored")
+
+  const rows = timeline(cps, runOf([["as1", inst(7, 15)]]))
+  assert.deepEqual(rows.map((r) => r.plannedMs), [inst(7), inst(9), inst(12), inst(15)], "planned = actual start + cumulative durations")
+  assert.deepEqual(rows.map((r) => r.actualMs), [inst(7, 15), null, null, null])
+  assert.deepEqual(rows.map((r) => r.behindMin), [15, null, null, null])
+  assert.equal(timeline(cps, runOf([["as1", inst(6, 45)]]))[0].behindMin, -15, "ahead of plan is negative")
+  assert.equal(timeline(cps, runOf([["as1", inst(7)]], inst(4, 10)))[0].plannedMs, inst(7, 10), "a late gun shifts the whole plan")
 }
 
 console.log("planMath ok")

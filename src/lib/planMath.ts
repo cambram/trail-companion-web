@@ -1,4 +1,4 @@
-import type { AidStation, Item, NutritionItem, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi"
+import type { AidStation, Item, NutritionItem, NutritionType, PlannedItem, RaceDetail, Run, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -126,4 +126,136 @@ export function crewStops(r: Pick<RaceDetail, "startTime" | "segments">): CrewSt
   return r.segments.flatMap((s, i) =>
     s.aidStation ? [{ station: s.aidStation, eta: i === 0 ? start : arrivals[i - 1], packNext: s.items }] : [],
   )
+}
+
+const MS_MIN = 60_000
+
+type Wall = { y: number; m: number; d: number; h: number; mi: number }
+
+function wall(ms: number, timeZone: string): Wall {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(ms)
+      .map((p) => [p.type, p.value]),
+  )
+  return { y: +parts.year, m: +parts.month, d: +parts.day, h: +parts.hour, mi: +parts.minute }
+}
+
+/** Wall clock minus UTC at an instant, in ms. */
+function offsetMs(ms: number, timeZone: string) {
+  const w = wall(ms, timeZone)
+  return Date.UTC(w.y, w.m - 1, w.d, w.h, w.mi) - Math.floor(ms / MS_MIN) * MS_MIN
+}
+
+/** "HH:mm" of an instant on the wall clock of `timeZone`. */
+export function fmtInstant(ms: number, timeZone: string) {
+  const w = wall(ms, timeZone)
+  return `${pad(w.h)}:${pad(w.mi)}`
+}
+
+/** "YYYY-MM-DD" of an instant on the wall clock of `timeZone`. */
+export function zonedDate(ms: number, timeZone: string) {
+  const w = wall(ms, timeZone)
+  return `${w.y}-${pad(w.m)}-${pad(w.d)}`
+}
+
+/** A wall-clock date ("YYYY-MM-DD") and time ("HH:mm") in `timeZone` -> instant in ms. */
+export function zonedToMs(date: string, hhmm: string, timeZone: string) {
+  const [y, m, d] = date.split("-").map(Number)
+  const [h, mi] = hhmm.split(":").map(Number)
+  const guess = Date.UTC(y, m - 1, d, h, mi)
+  return guess - offsetMs(guess - offsetMs(guess, timeZone), timeZone)
+}
+
+const shiftDate = (date: string, days: number) => {
+  const [y, m, d] = date.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+/** The instant for a typed "HH:mm" that lies closest to `nearMs`, so a time typed after midnight lands on the right day. */
+export function nearestInstant(nearMs: number, hhmm: string, timeZone: string) {
+  const day = zonedDate(nearMs, timeZone)
+  return [-1, 0, 1]
+    .map((delta) => zonedToMs(shiftDate(day, delta), hhmm, timeZone))
+    .reduce((best, c) => (Math.abs(c - nearMs) < Math.abs(best - nearMs) ? c : best))
+}
+
+export type Checkpoint = {
+  key: string
+  index: number
+  name: string
+  plannedMin: number
+  km: number | null
+  stationId: string | null
+}
+
+/**
+ * Aid stations in race order, then the finish. A station sits before its segment, so it arrives where the segment
+ * before it ends (0 for a station before the first segment). `km` is the cumulative mark there, null when blank.
+ */
+export function checkpoints(segments: Segment[]): Checkpoint[] {
+  let elapsed = 0
+  const out: Omit<Checkpoint, "index">[] = []
+  segments.forEach((s, i) => {
+    if (s.aidStation) {
+      out.push({
+        key: s.aidStation.id,
+        name: s.aidStation.name || "Aid station",
+        plannedMin: elapsed,
+        km: i === 0 ? 0 : segments[i - 1].endKm,
+        stationId: s.aidStation.id,
+      })
+    }
+    elapsed += s.duration || 0
+  })
+  out.push({ key: "finish", name: "Finish", plannedMin: elapsed, km: segments.at(-1)?.endKm ?? null, stationId: null })
+  return out.map((c, index) => ({ ...c, index }))
+}
+
+export type RunTimes = Pick<Run, "startedAtUtc" | "arrivals">
+
+const startMs = (run: Pick<Run, "startedAtUtc">) => Date.parse(run.startedAtUtc)
+
+const arrivalTimes = (run: Pick<Run, "arrivals">) =>
+  new Map(run.arrivals.map((a) => [a.checkpoint, Date.parse(a.arrivedAtUtc)]))
+
+/** The furthest checkpoint with an arrival; arrivals for checkpoints no longer on the plan are ignored. */
+export function lastRecorded(cps: Checkpoint[], run: RunTimes): { index: number; ms: number } | null {
+  const at = arrivalTimes(run)
+  for (let i = cps.length - 1; i >= 0; i--) {
+    const ms = at.get(cps[i].key)
+    if (ms !== undefined) return { index: i, ms }
+  }
+  return null
+}
+
+/** The checkpoint after the furthest recorded one; a missed station is not offered again. Null once the finish is in. */
+export function nextCheckpoint(cps: Checkpoint[], run: RunTimes): Checkpoint | null {
+  return cps[(lastRecorded(cps, run)?.index ?? -1) + 1] ?? null
+}
+
+export type TimelineRow = { checkpoint: Checkpoint; plannedMs: number; actualMs: number | null; behindMin: number | null }
+
+/** Planned (actual start + cumulative planned time) against actual for every checkpoint. */
+export function timeline(cps: Checkpoint[], run: RunTimes): TimelineRow[] {
+  const start = startMs(run)
+  const at = arrivalTimes(run)
+  return cps.map((checkpoint) => {
+    const plannedMs = start + checkpoint.plannedMin * MS_MIN
+    const actualMs = at.get(checkpoint.key) ?? null
+    return {
+      checkpoint,
+      plannedMs,
+      actualMs,
+      behindMin: actualMs === null ? null : Math.round((actualMs - plannedMs) / MS_MIN),
+    }
+  })
 }
