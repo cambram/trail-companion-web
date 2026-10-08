@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 
-import { clockToMin, etas, fluid, fmtClock, fmtDur, fmtKm, legs, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs } from "./planMath.ts"
+import { clockToMin, crewStops, etas, fluid, fmtClock, fmtDur, fmtKm, legs, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs } from "./planMath.ts"
 import type { AidStation, Item, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi.ts"
 
 const item = (carbs: number | null, type: NutritionType = "Gel", size: number | null = null): Item => ({
@@ -38,6 +38,8 @@ const race: RaceDetail = {
   startTime: "06:00:00",
   raceDate: null,
   createdAtUtc: "",
+  role: "Owner",
+  pin: null,
   segments: [
     seg(90, 11, [item(40), item(25), item(40)]),
     seg(180, 26, [item(40), item(27), item(24), item(40), item(null), item(50, "Liquid", 500)]),
@@ -124,5 +126,36 @@ assert.equal(
   32,
   "race distance is the furthest mark, even out of order",
 )
+
+{
+  const station = (name: string): AidStation => ({
+    id: name,
+    name,
+    notes: "",
+    kit: [{ label: "Socks", certainty: "Planned" }],
+    items: [],
+  })
+  const first = seg(180, 18, [item(40)])
+  const second = { ...seg(120, 30, [item(25), item(25)]), aidStation: station("AS1") }
+  const third = seg(60, 40, [])
+
+  const stops = crewStops({ startTime: "06:00:00", segments: [first, second, third] })
+  assert.equal(stops.length, 1, "only segments with a station become stops")
+  assert.equal(stops[0].station.name, "AS1")
+  assert.equal(stops[0].eta, 540, "arrival at a station = end of the segment before it")
+  assert.equal(stops[0].packNext.length, 2, "pack list is the following segment's items")
+
+  assert.deepEqual(
+    crewStops({ startTime: null, segments: [first, second] }).map((s) => s.eta),
+    [null],
+    "no start time, no ETA",
+  )
+  assert.deepEqual(
+    crewStops({ startTime: "06:00", segments: [{ ...first, aidStation: station("Start") }] }).map((s) => s.eta),
+    [360],
+    "a station before the first segment is at the start time",
+  )
+  assert.deepEqual(crewStops({ startTime: "06:00", segments: [] }), [])
+}
 
 console.log("planMath ok")

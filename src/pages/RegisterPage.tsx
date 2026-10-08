@@ -1,4 +1,4 @@
-import { Link, Navigate } from "react-router"
+import { Link, Navigate, useLocation } from "react-router"
 
 import { useAuth } from "@/auth/AuthContext"
 import { AppFrame } from "@/components/atoms/AppFrame"
@@ -20,17 +20,18 @@ function toRegisterError(e: unknown) {
 
 export default function RegisterPage() {
   const { user, login } = useAuth()
-  if (user) return <Navigate to="/" replace />
+  const state = useLocation().state as { from?: string } | null
+  if (user) return <Navigate to={state?.from ?? "/"} replace />
   if (!registrationEnabled)
     return (
       <AppFrame className="pt-6">
         <header className="pb-[18px]">
-          <Heading>Trail Companion</Heading>
+          <Heading>Crewmate</Heading>
           <Subtitle>Account creation is currently closed</Subtitle>
         </header>
         <p className="text-center text-[0.8125rem] text-muted-foreground">
           Have an account?{" "}
-          <Link to="/login" className="font-bold text-foreground">
+          <Link to="/login" state={state} className="font-bold text-foreground">
             Log in
           </Link>
         </p>
@@ -39,7 +40,7 @@ export default function RegisterPage() {
   return (
     <AppFrame className="pt-6">
       <header className="pb-[18px]">
-        <Heading>Trail Companion</Heading>
+        <Heading>Crewmate</Heading>
         <Subtitle>Create an account to plan your races</Subtitle>
       </header>
       <AuthForm
@@ -50,7 +51,7 @@ export default function RegisterPage() {
         footer={
           <>
             Have an account?{" "}
-            <Link to="/login" className="font-bold text-foreground">
+            <Link to="/login" state={state} className="font-bold text-foreground">
               Log in
             </Link>
           </>

@@ -1,6 +1,6 @@
 # trail-companion-web
 
-Trail race planner UI. Register or log in against the TrailCompanion API, then plan races as segments of fuel items (carbs planned vs needed).
+Crewmate (repo `trail-companion-web`): trail race planner and crew companion UI. Register or log in against the TrailCompanion API, then plan races as segments of fuel items (carbs planned vs needed).
 
 ## Run
 
@@ -16,10 +16,10 @@ npm run dev            # http://localhost:5173 (must match API Cors:AllowedOrigi
 |---|---|
 | `src/components/ui` | shadcn primitives (add more with `npx shadcn add <name>`) |
 | `src/components/atoms` | Smallest app pieces (`Heading`, `ErrorText`, `StatusPill`) |
-| `src/components/molecules` | Atoms/primitives combined (`FormField`, `StatRail`, `ConfirmButton`) |
-| `src/components/organisms` | Self-contained sections, props-only (`AuthForm`, `Hero`, `SegmentCard`, `ItemList`, `RaceCard`, `NewRaceForm`) |
+| `src/components/molecules` | Atoms/primitives combined (`FormField`, `StatRail`, `ConfirmButton`, `BackHeader`) |
+| `src/components/organisms` | Self-contained sections, props-only (`AuthForm`, `Hero`, `SegmentCard`, `ItemList`, `RaceCard`, `NewRaceForm`, `CrewPlan`) |
 | `src/pages` | Routes: wire organisms to hooks/data |
-| `src/hooks` | `useRaces` (list), `useRace` (one race: debounced race/segment saves, reorder, item add/delete) |
+| `src/hooks` | `useRaces` (list), `useRace` (one race: debounced race/segment saves, reorder, item add/delete), `useCrew` (crew list, remove member) |
 | `src/auth` | `AuthProvider`, `useAuth`, `ProtectedRoute` |
 | `src/lib` | `api` (fetch + `ApiError`), `authApi`, `racesApi` (endpoints), `planMath` (carb/pace math, minutes), `session` (token storage) |
 
@@ -36,6 +36,8 @@ Follows `trail-companion-api/docs/auth.md`: 15 min JWT bearer plus a 30-day refr
 
 - Refreshes are serialised across tabs with `navigator.locks` (`trail-companion-refresh`); a waiting tab adopts the session another tab stored. The static host sends a strict CSP (`render.yaml` `headers`); no inline scripts. The theme bootstrap lives in `public/theme.js`.
 
+A protected route redirects to `/login` with `state.from`, and login and register return there.
+
 Use `useAuth().authFetch(path)` for protected calls.
 
 Login 429 disables the button for 60s (fixed-window limit).
@@ -46,7 +48,9 @@ Login 429 disables the button for 60s (fixed-window limit).
 |---|---|
 | `/login`, `/register` | Auth (register logs in automatically) |
 | `/` | Races list + create race |
-| `/races/:id` | Race plan: segments and items |
+| `/join`, `/join/:pin` | Join a race's crew by PIN |
+| `/races/:id` | Race plan: segments and items. Renders the read-only crew view when `role` is `Crew` |
+| `/races/:id/share` | Owner: PIN, QR, crew list |
 | `/nutrition` | Nutrition library |
 | `/settings` | Account info, name, theme, password, log out, delete account |
 

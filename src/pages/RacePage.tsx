@@ -1,10 +1,13 @@
-import { ChevronLeft } from "lucide-react"
+import { Users } from "lucide-react"
 import { Fragment, useState } from "react"
 import { Link, Navigate, useNavigate, useParams } from "react-router"
 
 import { AppFrame } from "@/components/atoms/AppFrame"
 import { ErrorText } from "@/components/atoms/ErrorText"
+import { useAuth } from "@/auth/AuthContext"
+import { BackHeader } from "@/components/molecules/BackHeader"
 import { ConfirmButton } from "@/components/molecules/ConfirmButton"
+import { CrewPlan } from "@/components/organisms/CrewPlan"
 import { Hero } from "@/components/organisms/Hero"
 import { AidStationCard } from "@/components/organisms/AidStationCard"
 import { SegmentCard } from "@/components/organisms/SegmentCard"
@@ -14,6 +17,7 @@ import { useNutrition } from "@/hooks/useNutrition"
 import { useRace } from "@/hooks/useRace"
 import { ApiError } from "@/lib/api"
 import { etas, legs } from "@/lib/planMath"
+import { racesApi } from "@/lib/racesApi"
 
 export default function RacePage() {
   const { id = "" } = useParams()
@@ -22,6 +26,7 @@ export default function RacePage() {
     race, loadError, saveError, patchRace, moveSegment, moveItem, patchSegment, addSegment, deleteSegment, addItem, deleteItem, deleteRace,
     patchAidStation, addAidStation, deleteAidStation, moveAidStation, addStationItem, deleteStationItem, moveStationItem,
   } = useRace(id)
+  const { user, authFetch } = useAuth()
   const { items: library } = useNutrition()
   const [newId, setNewId] = useState<string>()
   const [adding, setAdding] = useState(false)
@@ -41,6 +46,27 @@ export default function RacePage() {
     }
   }
 
+  if (race?.role === "Crew")
+    return (
+      <AppFrame>
+        <BackHeader to="/" label="Back to races" title="Crew view" />
+        <CrewPlan race={race} />
+        {actionError && <ErrorText>{actionError}</ErrorText>}
+        <div className="mt-4 flex justify-center">
+          <ConfirmButton
+            label="Leave crew"
+            armedLabel="Tap again to leave this crew"
+            onConfirm={() =>
+              run(async () => {
+                await racesApi(authFetch).removeCrew(race.id, user!.id)
+                navigate("/")
+              })
+            }
+          />
+        </div>
+      </AppFrame>
+    )
+
   const onAdd = async () => {
     setAdding(true)
     await run(async () => setNewId(await addSegment()))
@@ -49,17 +75,15 @@ export default function RacePage() {
 
   return (
     <AppFrame>
-      <header className="flex items-center gap-3 pt-3 pb-[18px]">
+      <BackHeader to="/" label="Back to races" title="Race plan">
         <Link
-          to="/"
-          aria-label="Back to races"
+          to={`/races/${id}/share`}
+          aria-label="Share with crew"
           className="grid size-[42px] flex-none place-items-center rounded-full bg-card shadow-card"
         >
-          <ChevronLeft className="size-5" aria-hidden />
+          <Users className="size-5" aria-hidden />
         </Link>
-        <div className="flex-1 text-center font-extrabold">Race plan</div>
-        <span className="size-[42px]" />
-      </header>
+      </BackHeader>
       {loadError && <ErrorText>{loadError.message}</ErrorText>}
       {!race && !loadError && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}
       {race && (
