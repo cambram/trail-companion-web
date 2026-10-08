@@ -8,6 +8,7 @@ import RegisterPage from "@/pages/RegisterPage"
 import RacePage from "@/pages/RacePage"
 import RacesPage from "@/pages/RacesPage"
 import SettingsPage from "@/pages/SettingsPage"
+import SharePage from "@/pages/SharePage"
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<RacesPage />} />
         <Route path="/races/:id" element={<RacePage />} />
+        <Route path="/races/:id/share" element={<SharePage />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/join/:pin" element={<JoinPage />} />
         <Route path="/nutrition" element={<NutritionPage />} />
