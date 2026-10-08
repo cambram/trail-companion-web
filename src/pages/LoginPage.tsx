@@ -25,7 +25,7 @@ export default function LoginPage() {
   return (
     <AppFrame className="pt-6">
       <header className="pb-[18px]">
-        <Heading>Trail Companion</Heading>
+        <Heading>Crewmate</Heading>
         <Subtitle>{state?.notice ?? "Log in to continue"}</Subtitle>
       </header>
       <AuthForm

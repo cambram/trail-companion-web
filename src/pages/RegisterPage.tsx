@@ -26,7 +26,7 @@ export default function RegisterPage() {
     return (
       <AppFrame className="pt-6">
         <header className="pb-[18px]">
-          <Heading>Trail Companion</Heading>
+          <Heading>Crewmate</Heading>
           <Subtitle>Account creation is currently closed</Subtitle>
         </header>
         <p className="text-center text-[0.8125rem] text-muted-foreground">
@@ -40,7 +40,7 @@ export default function RegisterPage() {
   return (
     <AppFrame className="pt-6">
       <header className="pb-[18px]">
-        <Heading>Trail Companion</Heading>
+        <Heading>Crewmate</Heading>
         <Subtitle>Create an account to plan your races</Subtitle>
       </header>
       <AuthForm
