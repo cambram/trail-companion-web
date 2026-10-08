@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 
 type Props = { label: string; armedLabel: string; onConfirm: () => void }
 
-/** Tap once to arm (3s), tap again to confirm. */
+/** Tap once to arm (3s), tap again to confirm. Disarms on confirm so a fast extra tap arms it again. */
 export function ConfirmButton({ label, armedLabel, onConfirm }: Props) {
   const [armed, setArmed] = useState(false)
 
@@ -14,8 +14,17 @@ export function ConfirmButton({ label, armedLabel, onConfirm }: Props) {
     return () => clearTimeout(t)
   }, [armed])
 
+  const press = () => {
+    if (!armed) {
+      setArmed(true)
+      return
+    }
+    setArmed(false)
+    onConfirm()
+  }
+
   return (
-    <Button variant={armed ? "quietArmed" : "quiet"} onClick={() => (armed ? onConfirm() : setArmed(true))}>
+    <Button variant={armed ? "quietArmed" : "quiet"} onClick={press}>
       {armed ? armedLabel : label}
     </Button>
   )
