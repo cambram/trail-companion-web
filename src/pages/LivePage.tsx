@@ -1,21 +1,49 @@
+import { useEffect, useState } from "react"
 import { Navigate, useParams } from "react-router"
 
 import { AppFrame } from "@/components/atoms/AppFrame"
 import { ErrorText } from "@/components/atoms/ErrorText"
 import { BackHeader } from "@/components/molecules/BackHeader"
 import { ConfirmButton } from "@/components/molecules/ConfirmButton"
+import { FinishSummary } from "@/components/organisms/FinishSummary"
+import { InsightCards } from "@/components/organisms/InsightCards"
+import { PrepChecklist } from "@/components/organisms/PrepChecklist"
 import { RunTimeline } from "@/components/organisms/RunTimeline"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useRace } from "@/hooks/useRace"
 import { useRun } from "@/hooks/useRun"
 import { ApiError } from "@/lib/api"
-import { checkpoints, fmtBehind, fmtInstant, lastRecorded, nextCheckpoint, startLock, timeline } from "@/lib/planMath"
+import {
+  checkpoints,
+  finishSummary,
+  fmtBehind,
+  fmtInstant,
+  lastRecorded,
+  nextCheckpoint,
+  onCourse,
+  pacingOptions,
+  prediction,
+  prepFor,
+  segmentResult,
+  startLock,
+  timeline,
+} from "@/lib/planMath"
 
 const iso = (ms: number) => new Date(ms).toISOString()
 
+function useNow(everyMs: number) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), everyMs)
+    return () => window.clearInterval(t)
+  }, [everyMs])
+  return now
+}
+
 export default function LivePage() {
   const { id = "" } = useParams()
+  const now = useNow(30_000)
   const { race, loadError, reload } = useRace(id)
   const { state, error, busy, gone, start, record, editStart, editArrival, undoArrival, undoStart } = useRun(id, reload)
 
@@ -27,6 +55,12 @@ export default function LivePage() {
   const last = run ? lastRecorded(cps, run) : null
   const next = run ? nextCheckpoint(cps, run) : null
   const rows = run ? timeline(cps, run) : []
+  const waiting = run ? onCourse(cps, run) : null
+  const result = run ? segmentResult(cps, run) : null
+  const guess = run ? prediction(cps, run) : null
+  const pacing = run ? pacingOptions(cps, run, now) : null
+  const prep = race ? prepFor(next, race.segments) : null
+  const summary = run ? finishSummary(cps, run) : null
   const lock = race && state ? startLock(race, state) : null
   const startMs = run ? Date.parse(run.startedAtUtc) : 0
   const lastRow = last ? rows[last.index] : null
@@ -88,18 +122,21 @@ export default function LivePage() {
             </Card>
           )}
 
-          {run && !next && (
-            <Card className="items-center text-center">
-              <b>Finished</b>
-              <p className="text-[0.8125rem] text-muted-foreground">
-                Crossed the line at {run.finishedAtUtc ? fmtInstant(Date.parse(run.finishedAtUtc), zone) : "–"}.
-              </p>
-              <ConfirmButton
-                label="Undo finish (mis-tap)"
-                armedLabel="Tap again to undo the finish"
-                onConfirm={() => undoArrival("finish")}
-              />
-            </Card>
+          {run && next && (
+            <InsightCards onCourse={waiting} result={result} guess={guess} pacing={pacing} timeZone={zone} />
+          )}
+
+          {run && next && prep && next.stationId && (
+            <PrepChecklist key={next.key} prep={prep} stationId={next.stationId} runId={run.id} />
+          )}
+
+          {run && summary && run.finishedAtUtc && (
+            <FinishSummary
+              summary={summary}
+              finishedMs={Date.parse(run.finishedAtUtc)}
+              timeZone={zone}
+              onUndo={() => undoArrival("finish")}
+            />
           )}
 
           {run && (
