@@ -29,6 +29,7 @@ export function useRun(raceId: string, onWake?: () => void) {
       const next = await api.getRun(raceId)
       if (mine !== latest.current) return
       setState(next)
+      setGone(false)
       setError(undefined)
     } catch (e) {
       if (mine !== latest.current) return

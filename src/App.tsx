@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router"
 
 import { ProtectedRoute } from "@/auth/ProtectedRoute"
 import JoinPage from "@/pages/JoinPage"
+import LivePage from "@/pages/LivePage"
 import LoginPage from "@/pages/LoginPage"
 import NutritionPage from "@/pages/NutritionPage"
 import RegisterPage from "@/pages/RegisterPage"
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/" element={<RacesPage />} />
         <Route path="/races/:id" element={<RacePage />} />
         <Route path="/races/:id/share" element={<SharePage />} />
+        <Route path="/races/:id/live" element={<LivePage />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/join/:pin" element={<JoinPage />} />
         <Route path="/nutrition" element={<NutritionPage />} />
