@@ -1,4 +1,4 @@
-import type { AidStation, Item, NutritionItem, NutritionType, PlannedItem, RaceDetail, Run, RunState, Segment } from "./racesApi"
+import type { AidStation, Item, KitEntry, NutritionItem, NutritionType, PlannedItem, RaceDetail, Run, RunState, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -380,4 +380,21 @@ export function startLock(
   if (state.canStart) return null
   if (state.today < race.raceDate) return `Live tracking opens on race day, ${race.raceDate}. Today is ${state.today}.`
   return `Race day (${race.raceDate}) has passed, so live tracking can't be started.`
+}
+
+export const kitLabel = (k: KitEntry) => (k.certainty === "Maybe" ? `${k.label} (maybe)` : k.label)
+
+export type Prep = { station: string; kit: string[]; food: string[]; packNext: string[] }
+
+/** Card 4: what to have ready at the next checkpoint. The same data as the crew plan; null at the finish. */
+export function prepFor(next: Checkpoint | null, segments: Segment[]): Prep | null {
+  if (!next?.stationId) return null
+  const stop = crewStops({ startTime: null, segments }).find((s) => s.station.id === next.stationId)
+  if (!stop) return null
+  return {
+    station: stop.station.name,
+    kit: stop.station.kit.map(kitLabel),
+    food: stop.station.items.map((i) => i.name),
+    packNext: stop.packNext.map((i) => i.name),
+  }
 }

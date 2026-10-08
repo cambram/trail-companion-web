@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 
-import { checkpoints, clockToMin, crewStops, etas, finishSummary, fluid, fmtBehind, fmtClock, fmtDur, fmtInstant, fmtKm, lastRecorded, legs, nearestInstant, nextCheckpoint, onCourse, pacingOptions, prediction, segmentResult, startLock, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs, timeline, zonedDate, zonedToMs } from "./planMath.ts"
+import { checkpoints, clockToMin, crewStops, kitLabel, prepFor, etas, finishSummary, fluid, fmtBehind, fmtClock, fmtDur, fmtInstant, fmtKm, lastRecorded, legs, nearestInstant, nextCheckpoint, onCourse, pacingOptions, prediction, segmentResult, startLock, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs, timeline, zonedDate, zonedToMs } from "./planMath.ts"
+import { checkId, parseChecks } from "./checks.ts"
 import type { AidStation, AidStationItem, Item, NutritionType, PlannedItem, RaceDetail, Run, Segment } from "./racesApi.ts"
 
 const item = (carbs: number | null, type: NutritionType = "Gel", size: number | null = null): Item => ({
@@ -331,6 +332,30 @@ const runOf = (arrivals: [string, number][], startMs = inst(4)): Pick<Run, "star
   assert.match(startLock(lockRace, { today: "2026-10-12", canStart: false })!, /has passed/)
   assert.match(startLock({ raceDate: null, segments: utct() }, { today: "2026-10-11", canStart: false })!, /Set the race date/)
   assert.match(startLock({ raceDate: "2026-10-11", segments: [] }, { today: "2026-10-11", canStart: true })!, /at least one segment/)
+}
+
+{
+  const segs = utct()
+  const cps = checkpoints(segs)
+
+  assert.equal(kitLabel({ label: "Socks", certainty: "Planned" }), "Socks")
+  assert.equal(kitLabel({ label: "Cap", certainty: "Maybe" }), "Cap (maybe)")
+
+  assert.deepEqual(prepFor(cps[0], segs), {
+    station: "AS1",
+    kit: ["Socks", "Cap (maybe)"],
+    food: ["Coke"],
+    packNext: ["Gel"],
+  })
+  assert.deepEqual(prepFor(cps[1], segs), { station: "AS2", kit: [], food: [], packNext: [] })
+  assert.equal(prepFor(cps[3], segs), null, "nothing to prepare at the finish")
+  assert.equal(prepFor(null, segs), null)
+
+  assert.deepEqual(parseChecks(null), {})
+  assert.deepEqual(parseChecks("not json"), {})
+  assert.deepEqual(parseChecks("[1,2]"), {})
+  assert.deepEqual(parseChecks('{"a":true,"b":false,"c":1}'), { a: true }, "only ticked entries survive")
+  assert.equal(checkId("as1", "kit", 2), "as1:kit:2")
 }
 
 console.log("planMath ok")

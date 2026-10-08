@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { clockToMin, crewStops, fluid, fmtClock, fmtDur, planned } from "@/lib/planMath"
+import { clockToMin, crewStops, fluid, fmtClock, fmtDur, kitLabel, planned } from "@/lib/planMath"
 import type { RaceDetail } from "@/lib/racesApi"
 
 function CrewList({ title, entries }: { title: string; entries: string[] }) {
@@ -52,7 +52,7 @@ export function CrewPlan({ race }: { race: RaceDetail }) {
           </div>
           <CrewList
             title="Kit & actions"
-            entries={station.kit.map((k) => (k.certainty === "Maybe" ? `${k.label} (maybe)` : k.label))}
+            entries={station.kit.map(kitLabel)}
           />
           <CrewList title="Food & drink here" entries={station.items.map((i) => i.name)} />
           <CrewList title="Pack for next segment" entries={packNext.map((i) => i.name)} />
