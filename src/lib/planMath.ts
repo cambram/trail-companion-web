@@ -1,4 +1,4 @@
-import type { AidStation, Item, NutritionItem, NutritionType, PlannedItem, RaceDetail, Run, Segment } from "./racesApi"
+import type { AidStation, Item, NutritionItem, NutritionType, PlannedItem, RaceDetail, Run, RunState, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -258,4 +258,126 @@ export function timeline(cps: Checkpoint[], run: RunTimes): TimelineRow[] {
       behindMin: actualMs === null ? null : Math.round((actualMs - plannedMs) / MS_MIN),
     }
   })
+}
+
+/** "On plan", "15 min behind", "15 min ahead"; "1h15 behind" from an hour up. */
+export function fmtBehind(min: number) {
+  if (min === 0) return "On plan"
+  const size = Math.abs(min)
+  return `${size >= 60 ? fmtDur(size) : `${size} min`} ${min > 0 ? "behind" : "ahead"}`
+}
+
+/** Before any arrival there is no pace data: only the first checkpoint and its planned time. */
+export function onCourse(cps: Checkpoint[], run: RunTimes): { next: Checkpoint; plannedMs: number } | null {
+  if (lastRecorded(cps, run)) return null
+  return { next: cps[0], plannedMs: startMs(run) + cps[0].plannedMin * MS_MIN }
+}
+
+export type SegmentResult = {
+  from: string
+  to: string
+  actualMin: number
+  plannedMin: number
+  behindMin: number
+  pace: number | null
+}
+
+/** Card 1: the leg just completed (from the previous recorded checkpoint, or the start). */
+export function segmentResult(cps: Checkpoint[], run: RunTimes): SegmentResult | null {
+  const last = lastRecorded(cps, run)
+  if (!last) return null
+  const start = startMs(run)
+  const at = arrivalTimes(run)
+  let prev: { name: string; ms: number; plannedMin: number; km: number | null } = { name: "Start", ms: start, plannedMin: 0, km: 0 }
+  for (let i = last.index - 1; i >= 0; i--) {
+    const ms = at.get(cps[i].key)
+    if (ms !== undefined) {
+      prev = { name: cps[i].name, ms, plannedMin: cps[i].plannedMin, km: cps[i].km }
+      break
+    }
+  }
+  const to = cps[last.index]
+  const actualMin = (last.ms - prev.ms) / MS_MIN
+  const km = to.km !== null && prev.km !== null ? to.km - prev.km : null
+  return {
+    from: prev.name,
+    to: to.name,
+    actualMin,
+    plannedMin: to.plannedMin - prev.plannedMin,
+    behindMin: Math.round((last.ms - start) / MS_MIN - to.plannedMin),
+    pace: km !== null && km > 0 ? actualMin / km : null,
+  }
+}
+
+export type Prediction = { next: Checkpoint; predictedMs: number; plannedMs: number; ratio: number }
+
+/** Card 2: last actual arrival + next planned leg x (actual elapsed / planned elapsed). One value, no range. */
+export function prediction(cps: Checkpoint[], run: RunTimes): Prediction | null {
+  const last = lastRecorded(cps, run)
+  const next = last ? cps[last.index + 1] : undefined
+  if (!last || !next) return null
+  const start = startMs(run)
+  const plannedElapsed = cps[last.index].plannedMin
+  const raw = plannedElapsed > 0 ? (last.ms - start) / MS_MIN / plannedElapsed : 1
+  const ratio = Number.isFinite(raw) && raw > 0 ? raw : 1
+  const legMin = next.plannedMin - plannedElapsed
+  return {
+    next,
+    predictedMs: last.ms + legMin * ratio * MS_MIN,
+    plannedMs: start + next.plannedMin * MS_MIN,
+    ratio,
+  }
+}
+
+export type Pacing = {
+  next: Checkpoint
+  behindMin: number
+  a: { plannedMs: number; availableMin: number; achievable: boolean; requiredPace: number | null }
+  b: { arrivalMs: number; legMin: number; plannedPace: number | null }
+}
+
+const legKm = (from: Checkpoint, to: Checkpoint) =>
+  from.km !== null && to.km !== null && to.km > from.km ? to.km - from.km : null
+
+/** Card 3: A holds the planned arrival time, B holds the planned leg duration. Pace is null without distances. */
+export function pacingOptions(cps: Checkpoint[], run: RunTimes, nowMs: number): Pacing | null {
+  const last = lastRecorded(cps, run)
+  const next = last ? cps[last.index + 1] : undefined
+  if (!last || !next) return null
+  const here = cps[last.index]
+  const start = startMs(run)
+  const km = legKm(here, next)
+  const legMin = next.plannedMin - here.plannedMin
+  const plannedMs = start + next.plannedMin * MS_MIN
+  const availableMin = (plannedMs - last.ms) / MS_MIN
+  const achievable = plannedMs > nowMs && availableMin > 0
+  return {
+    next,
+    behindMin: Math.round((last.ms - start) / MS_MIN - here.plannedMin),
+    a: { plannedMs, availableMin, achievable, requiredPace: achievable && km !== null ? availableMin / km : null },
+    b: { arrivalMs: last.ms + legMin * MS_MIN, legMin, plannedPace: km !== null && legMin > 0 ? legMin / km : null },
+  }
+}
+
+/** Total time and the difference from plan once the finish is in. */
+export function finishSummary(
+  cps: Checkpoint[],
+  run: Pick<Run, "startedAtUtc" | "finishedAtUtc">,
+): { totalMin: number; plannedMin: number; behindMin: number } | null {
+  if (!run.finishedAtUtc) return null
+  const totalMin = (Date.parse(run.finishedAtUtc) - startMs(run)) / MS_MIN
+  const plannedMin = cps[cps.length - 1].plannedMin
+  return { totalMin, plannedMin, behindMin: Math.round(totalMin - plannedMin) }
+}
+
+/** Why Start is disabled, or null when it is allowed. The server enforces the same rule. */
+export function startLock(
+  race: Pick<RaceDetail, "raceDate" | "segments">,
+  state: Pick<RunState, "today" | "canStart">,
+): string | null {
+  if (race.segments.length === 0) return "Add at least one segment to the plan before starting."
+  if (!race.raceDate) return "Set the race date on the plan to turn on live tracking."
+  if (state.canStart) return null
+  if (state.today < race.raceDate) return `Live tracking opens on race day, ${race.raceDate}. Today is ${state.today}.`
+  return `Race day (${race.raceDate}) has passed, so live tracking can't be started.`
 }
