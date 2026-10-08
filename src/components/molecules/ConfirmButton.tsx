@@ -2,10 +2,10 @@ import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 
-type Props = { label: string; armedLabel: string; onConfirm: () => void }
+type Props = { label: string; armedLabel: string; onConfirm: () => void; disabled?: boolean }
 
 /** Tap once to arm (3s), tap again to confirm. Disarms on confirm so a fast extra tap arms it again. */
-export function ConfirmButton({ label, armedLabel, onConfirm }: Props) {
+export function ConfirmButton({ label, armedLabel, onConfirm, disabled }: Props) {
   const [armed, setArmed] = useState(false)
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function ConfirmButton({ label, armedLabel, onConfirm }: Props) {
   }
 
   return (
-    <Button variant={armed ? "quietArmed" : "quiet"} onClick={press}>
+    <Button variant={armed ? "quietArmed" : "quiet"} disabled={disabled} onClick={press}>
       {armed ? armedLabel : label}
     </Button>
   )

@@ -8,10 +8,11 @@ type Props = {
   finishedMs: number
   timeZone: string
   onUndo: () => void
+  busy: boolean
 }
 
 /** Total time and the difference from plan. The timeline below it holds the splits. */
-export function FinishSummary({ summary, finishedMs, timeZone, onUndo }: Props) {
+export function FinishSummary({ summary, finishedMs, timeZone, onUndo, busy }: Props) {
   return (
     <Card className="items-center text-center">
       <p className="text-xs font-extrabold text-muted-foreground">Finish time</p>
@@ -20,7 +21,7 @@ export function FinishSummary({ summary, finishedMs, timeZone, onUndo }: Props) 
         Crossed at {fmtInstant(finishedMs, timeZone)} · planned {fmtDur(summary.plannedMin)}
       </p>
       <StatusPill ok={summary.behindMin <= 0}>{fmtBehind(summary.behindMin)}</StatusPill>
-      <ConfirmButton label="Undo finish (mis-tap)" armedLabel="Tap again to undo the finish" onConfirm={onUndo} />
+      <ConfirmButton label="Undo finish (mis-tap)" armedLabel="Tap again to undo the finish" onConfirm={onUndo} disabled={busy} />
     </Card>
   )
 }

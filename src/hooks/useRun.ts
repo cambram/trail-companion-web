@@ -6,7 +6,10 @@ import { racesApi, type RunState } from "@/lib/racesApi"
 
 export const POLL_MS = 20_000
 
-const messageOf = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong")
+const messageOf = (e: unknown) => {
+  if (e instanceof ApiError && e.validationErrors.length) return e.validationErrors.map((v) => v.message).join(" ")
+  return e instanceof Error ? e.message : "Something went wrong"
+}
 
 /** Live run state: polls while the tab is visible, refreshes on focus, stops polling once the run is finished. */
 export function useRun(raceId: string, onWake?: () => void) {
@@ -81,6 +84,7 @@ export function useRun(raceId: string, onWake?: () => void) {
           await refresh()
           return true
         }
+        if (e instanceof ApiError && e.status === 404) await refresh()
         setError(messageOf(e))
         return false
       } finally {

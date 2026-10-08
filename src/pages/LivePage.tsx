@@ -117,6 +117,7 @@ export default function LivePage() {
                     label="Undo last arrival"
                     armedLabel={`Tap again to undo ${cps[last.index].name}`}
                     onConfirm={() => undoArrival(cps[last.index].key)}
+                    disabled={busy}
                   />
                 </div>
               )}
@@ -137,6 +138,7 @@ export default function LivePage() {
               finishedMs={Date.parse(run.finishedAtUtc)}
               timeZone={zone}
               onUndo={() => undoArrival("finish")}
+              busy={busy}
             />
           )}
 
@@ -152,12 +154,13 @@ export default function LivePage() {
             />
           )}
 
-          {run && (
+          {run && !run.finishedAtUtc && (
             <div className="mt-2 flex justify-center">
               <ConfirmButton
                 label="Undo start"
                 armedLabel="Tap again to delete this run and every arrival"
                 onConfirm={() => undoStart()}
+                disabled={busy}
               />
             </div>
           )}
