@@ -20,13 +20,13 @@ function toLoginError(e: unknown) {
 
 export default function LoginPage() {
   const { user, login } = useAuth()
-  const notice = (useLocation().state as { notice?: string } | null)?.notice
-  if (user) return <Navigate to="/" replace />
+  const state = useLocation().state as { notice?: string; from?: string } | null
+  if (user) return <Navigate to={state?.from ?? "/"} replace />
   return (
     <AppFrame className="pt-6">
       <header className="pb-[18px]">
         <Heading>Trail Companion</Heading>
-        <Subtitle>{notice ?? "Log in to continue"}</Subtitle>
+        <Subtitle>{state?.notice ?? "Log in to continue"}</Subtitle>
       </header>
       <AuthForm
         title="Log in"
@@ -36,7 +36,7 @@ export default function LoginPage() {
           registrationEnabled ? (
             <>
               No account?{" "}
-              <Link to="/register" className="font-bold text-foreground">
+              <Link to="/register" state={state} className="font-bold text-foreground">
                 Create one
               </Link>
             </>

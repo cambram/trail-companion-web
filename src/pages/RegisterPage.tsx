@@ -1,4 +1,4 @@
-import { Link, Navigate } from "react-router"
+import { Link, Navigate, useLocation } from "react-router"
 
 import { useAuth } from "@/auth/AuthContext"
 import { AppFrame } from "@/components/atoms/AppFrame"
@@ -20,7 +20,8 @@ function toRegisterError(e: unknown) {
 
 export default function RegisterPage() {
   const { user, login } = useAuth()
-  if (user) return <Navigate to="/" replace />
+  const state = useLocation().state as { from?: string } | null
+  if (user) return <Navigate to={state?.from ?? "/"} replace />
   if (!registrationEnabled)
     return (
       <AppFrame className="pt-6">
@@ -30,7 +31,7 @@ export default function RegisterPage() {
         </header>
         <p className="text-center text-[0.8125rem] text-muted-foreground">
           Have an account?{" "}
-          <Link to="/login" className="font-bold text-foreground">
+          <Link to="/login" state={state} className="font-bold text-foreground">
             Log in
           </Link>
         </p>
@@ -50,7 +51,7 @@ export default function RegisterPage() {
         footer={
           <>
             Have an account?{" "}
-            <Link to="/login" className="font-bold text-foreground">
+            <Link to="/login" state={state} className="font-bold text-foreground">
               Log in
             </Link>
           </>
