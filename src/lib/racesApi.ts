@@ -66,6 +66,12 @@ export type RaceDetail = Race & { segments: Segment[]; pin: string | null }
 
 export type CrewMember = { appUserId: string; displayName: string; joinedAtUtc: string }
 
+export type Arrival = { checkpoint: string; arrivedAtUtc: string }
+
+export type Run = { id: string; startedAtUtc: string; finishedAtUtc: string | null; arrivals: Arrival[] }
+
+export type RunState = { timeZone: string; today: string; canStart: boolean; run: Run | null }
+
 export type SegmentRequest = { name: string; duration: number; endKm?: number | null; notes?: string }
 export type NutritionItemRequest = Omit<NutritionItem, "id">
 export type ItemRequest = { nutritionItemId: string }
@@ -90,6 +96,17 @@ export const racesApi = (f: Fetch) => ({
   listCrew: (raceId: string) => f<CrewMember[]>(`/api/races/${raceId}/crew`),
   removeCrew: (raceId: string, appUserId: string) =>
     f<void>(`/api/races/${raceId}/crew/${appUserId}`, json("DELETE")),
+  getRun: (raceId: string) => f<RunState>(`/api/races/${raceId}/run`),
+  startRun: (raceId: string, startedAt?: string) =>
+    f<RunState>(`/api/races/${raceId}/run/start`, json("POST", { startedAt })),
+  editRun: (raceId: string, startedAt: string) => f<RunState>(`/api/races/${raceId}/run`, json("PATCH", { startedAt })),
+  deleteRun: (raceId: string) => f<RunState>(`/api/races/${raceId}/run`, json("DELETE")),
+  recordArrival: (raceId: string, checkpoint: string, arrivedAt?: string) =>
+    f<RunState>(`/api/races/${raceId}/run/arrivals`, json("POST", { checkpoint, arrivedAt })),
+  editArrival: (raceId: string, checkpoint: string, arrivedAt: string) =>
+    f<RunState>(`/api/races/${raceId}/run/arrivals/${checkpoint}`, json("PATCH", { arrivedAt })),
+  deleteArrival: (raceId: string, checkpoint: string) =>
+    f<RunState>(`/api/races/${raceId}/run/arrivals/${checkpoint}`, json("DELETE")),
 
   createSegment: (raceId: string, body: SegmentRequest) =>
     f<Omit<Segment, "items" | "aidStation">>(`/api/races/${raceId}/segments`, json("POST", body)),

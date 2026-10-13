@@ -11,7 +11,7 @@ import { CrewPlan } from "@/components/organisms/CrewPlan"
 import { Hero } from "@/components/organisms/Hero"
 import { AidStationCard } from "@/components/organisms/AidStationCard"
 import { SegmentCard } from "@/components/organisms/SegmentCard"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useNutrition } from "@/hooks/useNutrition"
 import { useRace } from "@/hooks/useRace"
@@ -50,6 +50,9 @@ export default function RacePage() {
     return (
       <AppFrame>
         <BackHeader to="/" label="Back to races" title="Crew view" />
+        <Link to={`/races/${id}/live`} className={`${buttonVariants({ variant: "default", block: true })} mb-3.5`}>
+          Live tracking
+        </Link>
         <CrewPlan race={race} />
         {actionError && <ErrorText>{actionError}</ErrorText>}
         <div className="mt-4 flex justify-center">
@@ -89,6 +92,9 @@ export default function RacePage() {
       {race && (
         <div className="grid gap-3.5">
           <Hero race={race} onPatch={patchRace} onAddSegment={onAdd} adding={adding} />
+          <Link to={`/races/${id}/live`} className={buttonVariants({ variant: "secondary", block: true })}>
+            Live tracking
+          </Link>
           {(saveError || actionError) && <ErrorText>{saveError ?? actionError}</ErrorText>}
           {race.segments.map((s, i) => {
             const a = s.aidStation

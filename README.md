@@ -16,12 +16,12 @@ npm run dev            # http://localhost:5173 (must match API Cors:AllowedOrigi
 |---|---|
 | `src/components/ui` | shadcn primitives (add more with `npx shadcn add <name>`) |
 | `src/components/atoms` | Smallest app pieces (`Heading`, `ErrorText`, `StatusPill`) |
-| `src/components/molecules` | Atoms/primitives combined (`FormField`, `StatRail`, `ConfirmButton`, `BackHeader`) |
-| `src/components/organisms` | Self-contained sections, props-only (`AuthForm`, `Hero`, `SegmentCard`, `ItemList`, `RaceCard`, `NewRaceForm`, `CrewPlan`) |
+| `src/components/molecules` | Atoms/primitives combined (`FormField`, `StatRail`, `ConfirmButton`, `BackHeader`, `TimeEdit`) |
+| `src/components/organisms` | Self-contained sections, props-only (`AuthForm`, `Hero`, `SegmentCard`, `ItemList`, `RaceCard`, `NewRaceForm`, `CrewPlan`, `RunTimeline`, `InsightCards`, `PrepChecklist`, `FinishSummary`) |
 | `src/pages` | Routes: wire organisms to hooks/data |
-| `src/hooks` | `useRaces` (list), `useRace` (one race: debounced race/segment saves, reorder, item add/delete), `useCrew` (crew list, remove member) |
+| `src/hooks` | `useRaces` (list), `useRace` (one race: debounced race/segment saves, reorder, item add/delete), `useCrew` (crew list, remove member), `useRun` (live run: polling, focus refresh, arrival and correction calls) |
 | `src/auth` | `AuthProvider`, `useAuth`, `ProtectedRoute` |
-| `src/lib` | `api` (fetch + `ApiError`), `authApi`, `racesApi` (endpoints), `planMath` (carb/pace math, minutes), `session` (token storage) |
+| `src/lib` | `api` (fetch + `ApiError`), `authApi`, `racesApi` (endpoints), `planMath` (carb/pace math, minutes), `session` (token storage), `checks` (per-device checklist ticks) |
 
 ## Auth
 
@@ -51,6 +51,7 @@ Login 429 disables the button for 60s (fixed-window limit).
 | `/join`, `/join/:pin` | Join a race's crew by PIN |
 | `/races/:id` | Race plan: segments and items. Renders the read-only crew view when `role` is `Crew` |
 | `/races/:id/share` | Owner: PIN, QR, crew list |
+| `/races/:id/live` | Live tracking for the owner and crew: start, arrivals, corrections, cards 1–4, finish summary |
 | `/nutrition` | Nutrition library |
 | `/settings` | Account info, name, theme, password, log out, delete account |
 
@@ -61,9 +62,13 @@ System, Light or Dark from Settings. Stored as `localStorage.theme` (`light`/`da
 ## Checks
 
 ```bash
-node --experimental-strip-types src/lib/planMath.check.ts   # totals, pace, ETA math
+node --experimental-strip-types src/lib/planMath.check.ts   # totals, pace, ETA, live-run cards
 node --experimental-strip-types src/lib/flags.check.ts      # feature flag parsing
 ```
+
+## Live tracking
+
+The live page polls the run every 20 s while the tab is visible, refreshes on focus, and stops polling once the run is finished. Times are shown in the zone the API returns. Checklist ticks live in `localStorage` per device and run.
 
 ## Editing
 

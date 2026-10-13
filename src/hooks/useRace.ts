@@ -312,6 +312,7 @@ export function useRace(id: string) {
   return {
     race,
     loadError,
+    reload: load,
     saveError,
     patchRace,
     moveSegment,
