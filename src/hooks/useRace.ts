@@ -16,7 +16,7 @@ function move<T>(arr: T[], i: number, d: number) {
 }
 
 export type RacePatch = Partial<Pick<RaceDetail, "name" | "target" | "startTime" | "raceDate">>
-export type SegmentPatch = Partial<Pick<Segment, "name" | "duration" | "endKm" | "notes">>
+export type SegmentPatch = Partial<Pick<Segment, "name" | "duration" | "endKm" | "ascentM" | "notes">>
 export type AidStationPatch = Partial<Pick<AidStation, "name" | "notes" | "kit">>
 
 const byPosition = <T extends { position: number }>(xs: T[]) => [...xs].sort((a, b) => a.position - b.position)
@@ -72,7 +72,7 @@ export function useRace(id: string) {
       const s = raceRef.current?.segments.find((x) => x.id === segId)
       if (!s || !s.name.trim()) return
       api
-        .updateSegment(id, segId, { name: s.name.trim(), duration: s.duration, endKm: s.endKm, notes: s.notes })
+        .updateSegment(id, segId, { name: s.name.trim(), duration: s.duration, endKm: s.endKm, ascentM: s.ascentM, notes: s.notes })
         .then(() => setSaveError(undefined))
         .catch((e: Error) => setSaveError(e.message))
     },

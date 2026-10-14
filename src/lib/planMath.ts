@@ -24,6 +24,13 @@ export function parseDur(v: string): number | null {
   return null
 }
 
+/** Whole metres 0 to 10000. "" -> 0 (the card stores blank as null), anything else -> null. Metres. */
+export function parseAscent(v: string): number | null {
+  v = v.trim()
+  if (!v) return 0
+  return /^\d{1,5}$/.test(v) && Number(v) <= 10_000 ? Number(v) : null
+}
+
 /** "12.5" or "12,5" -> 12.5, "" -> 0, negative or non-numeric -> null. Km. */
 export function parseDistance(v: string): number | null {
   v = v.trim().replace(",", ".")
@@ -194,15 +201,17 @@ export type Checkpoint = {
   name: string
   plannedMin: number
   km: number | null
+  climbM: number
   stationId: string | null
 }
 
 /**
  * Aid stations in race order, then the finish. A station sits before its segment, so it arrives where the segment
- * before it ends (0 for a station before the first segment). `km` is the cumulative mark there, null when blank.
+ * before it ends (0 for a station before the first segment). `km` is the cumulative mark there, null when blank; `climbM` is the cumulative ascent there.
  */
 export function checkpoints(segments: Segment[]): Checkpoint[] {
   let elapsed = 0
+  let climbed = 0
   const out: Omit<Checkpoint, "index">[] = []
   segments.forEach((s, i) => {
     if (s.aidStation) {
@@ -211,12 +220,21 @@ export function checkpoints(segments: Segment[]): Checkpoint[] {
         name: s.aidStation.name || "Aid station",
         plannedMin: elapsed,
         km: i === 0 ? 0 : segments[i - 1].endKm,
+        climbM: climbed,
         stationId: s.aidStation.id,
       })
     }
     elapsed += s.duration || 0
+    climbed += s.ascentM ?? 0
   })
-  out.push({ key: "finish", name: "Finish", plannedMin: elapsed, km: segments.at(-1)?.endKm ?? null, stationId: null })
+  out.push({
+    key: "finish",
+    name: "Finish",
+    plannedMin: elapsed,
+    km: segments.at(-1)?.endKm ?? null,
+    climbM: climbed,
+    stationId: null,
+  })
   return out.map((c, index) => ({ ...c, index }))
 }
 
@@ -309,23 +327,79 @@ export function segmentResult(cps: Checkpoint[], run: RunTimes): SegmentResult |
   }
 }
 
-export type Prediction = { next: Checkpoint; predictedMs: number; plannedMs: number; ratio: number }
+/** Planned minutes that one metre of ascent is worth: 10 m of climbing adds 1 min. Tune after real races. */
+export const CLIMB_M_PER_MIN = 10
 
-/** Card 2: last actual arrival + next planned leg x (actual elapsed / planned elapsed). One value, no range. */
+/** Planned time plus its climbing, in minutes, from the start to a checkpoint. Equals plannedMin when no ascent is planned. */
+export const weightMin = (cp: Pick<Checkpoint, "plannedMin" | "climbM">) => cp.plannedMin + cp.climbM / CLIMB_M_PER_MIN
+
+export type Prediction = {
+  next: Checkpoint
+  predictedMs: number
+  plannedMs: number
+  ratio: number
+  range: { lowMs: number; highMs: number } | null
+}
+
+const MIN_LEG_RATES = 2
+const MIN_VISIBLE_SPREAD_MIN = 1
+
+/**
+ * Minutes behind plan per weight-minute, for each leg between consecutive recorded checkpoints (the start counts).
+ * Legs with no planned time or no weight are skipped.
+ */
+function legDeviations(cps: Checkpoint[], run: RunTimes, lastIndex: number): number[] {
+  const at = arrivalTimes(run)
+  let prev = { ms: startMs(run), planned: 0, weight: 0 }
+  const rates: number[] = []
+  for (let i = 0; i <= lastIndex; i++) {
+    const ms = at.get(cps[i].key)
+    if (ms === undefined) continue
+    const planned = cps[i].plannedMin
+    const weight = weightMin(cps[i])
+    const legWeight = weight - prev.weight
+    const rate = ((ms - prev.ms) / MS_MIN - (planned - prev.planned)) / legWeight
+    if (planned - prev.planned > 0 && legWeight > 0 && Number.isFinite(rate)) rates.push(rate)
+    prev = { ms, planned, weight }
+  }
+  return rates
+}
+
+const sampleSd = (xs: number[]) => {
+  const mean = xs.reduce((a, b) => a + b, 0) / xs.length
+  return Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / (xs.length - 1))
+}
+
+/**
+ * Card 2: last actual arrival + next planned leg + the minutes already behind plan, shared out by weight (planned time plus
+ * climbing). Planned times already include the climbing, so weight only decides how the deficit spreads over later legs.
+ * With no ascent this is next planned leg x (actual / planned elapsed). The range is the spread of the per-leg deviations;
+ * it needs two legs and shows only if it is wide enough.
+ */
 export function prediction(cps: Checkpoint[], run: RunTimes): Prediction | null {
   const last = lastRecorded(cps, run)
   const next = last ? cps[last.index + 1] : undefined
   if (!last || !next) return null
+  const here = cps[last.index]
   const start = startMs(run)
-  const plannedElapsed = cps[last.index].plannedMin
-  const raw = plannedElapsed > 0 ? (last.ms - start) / MS_MIN / plannedElapsed : 1
-  const ratio = Number.isFinite(raw) && raw > 0 ? raw : 1
-  const legMin = next.plannedMin - plannedElapsed
+  const elapsedMin = (last.ms - start) / MS_MIN
+  const behindMin = elapsedMin - here.plannedMin
+  const deviation = here.plannedMin > 0 && weightMin(here) > 0 ? behindMin / weightMin(here) : 0
+  const raw = here.plannedMin > 0 ? elapsedMin / here.plannedMin : 1
+  const legPlanned = next.plannedMin - here.plannedMin
+  const legWeight = weightMin(next) - weightMin(here)
+  const legMin = Math.max(legPlanned + deviation * legWeight, 0)
+  const deviations = legDeviations(cps, run, last.index)
+  const spread = deviations.length >= MIN_LEG_RATES ? sampleSd(deviations) * legWeight : 0
   return {
     next,
-    predictedMs: last.ms + legMin * ratio * MS_MIN,
+    predictedMs: last.ms + legMin * MS_MIN,
     plannedMs: start + next.plannedMin * MS_MIN,
-    ratio,
+    ratio: Number.isFinite(raw) && raw > 0 ? raw : 1,
+    range:
+      spread >= MIN_VISIBLE_SPREAD_MIN
+        ? { lowMs: last.ms + Math.max(legMin - spread, 0) * MS_MIN, highMs: last.ms + (legMin + spread) * MS_MIN }
+        : null,
   }
 }
 

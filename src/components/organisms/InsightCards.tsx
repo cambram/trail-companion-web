@@ -67,6 +67,11 @@ export function InsightCards({ onCourse, result, guess, pacing, timeZone }: Prop
         <Card>
           <p className="text-xs font-extrabold text-muted-foreground">Predicted arrival · {guess.next.name}</p>
           <p className="text-[2.1rem] leading-[1.1] font-extrabold tracking-[-0.03em]">{fmtInstant(guess.predictedMs, timeZone)}</p>
+          {guess.range && (
+            <p className="text-[0.9375rem] font-bold">
+              Likely between {fmtInstant(guess.range.lowMs, timeZone)} and {fmtInstant(guess.range.highMs, timeZone)}
+            </p>
+          )}
           <p className="text-[0.8125rem] text-muted-foreground">
             Planned {fmtInstant(guess.plannedMs, timeZone)}. At {Math.round(guess.ratio * 100)}% of planned time so far.
           </p>

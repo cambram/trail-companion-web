@@ -70,6 +70,8 @@ node --experimental-strip-types src/lib/flags.check.ts      # feature flag parsi
 
 The live page polls the run every 20 s while the tab is visible, refreshes on focus, and stops polling once the run is finished. Times are shown in the zone the API returns. Checklist ticks live in `localStorage` per device and run.
 
+Card 2 shows a "Likely between" range from the second completed leg (the spread of per-leg rates). Segments can carry ascent in metres; the prediction shares the minutes already behind plan across the later legs by planned time plus 1 min per 10 m of climbing (`CLIMB_M_PER_MIN` in `planMath.ts`). With no ascent entered it is the plain planned-time ratio.
+
 ## Editing
 
 Race name, target and start time (hero) and segment fields save automatically (debounced `PUT`). Segments and items reorder with the arrow buttons via `PUT .../segments/order` and `PUT .../items/order` (complete id list).

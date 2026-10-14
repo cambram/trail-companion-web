@@ -57,6 +57,7 @@ export type Segment = {
   name: string
   duration: number
   endKm: number | null
+  ascentM: number | null
   notes: string
   items: Item[]
   aidStation: AidStation | null
@@ -72,7 +73,7 @@ export type Run = { id: string; startedAtUtc: string; finishedAtUtc: string | nu
 
 export type RunState = { timeZone: string; today: string; canStart: boolean; run: Run | null }
 
-export type SegmentRequest = { name: string; duration: number; endKm?: number | null; notes?: string }
+export type SegmentRequest = { name: string; duration: number; endKm?: number | null; ascentM?: number | null; notes?: string }
 export type NutritionItemRequest = Omit<NutritionItem, "id">
 export type ItemRequest = { nutritionItemId: string }
 export type AidStationRequest = { name: string; notes: string; kit: KitEntry[] }

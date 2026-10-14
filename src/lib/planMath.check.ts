@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 
-import { checkpoints, clockToMin, crewStops, kitLabel, prepFor, etas, finishSummary, fluid, fmtBehind, fmtClock, fmtDur, fmtInstant, fmtKm, lastRecorded, legs, nearestInstant, nextCheckpoint, onCourse, pacingOptions, prediction, segmentResult, startLock, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs, timeline, zonedDate, zonedToMs } from "./planMath.ts"
+import { CLIMB_M_PER_MIN, parseAscent, weightMin, checkpoints, clockToMin, crewStops, kitLabel, prepFor, etas, finishSummary, fluid, fmtBehind, fmtClock, fmtDur, fmtInstant, fmtKm, lastRecorded, legs, nearestInstant, nextCheckpoint, onCourse, pacingOptions, prediction, segmentResult, startLock, paceText, parseDistance, parseDur, planned, raceTotals, sizeText, sizeUnit, stationCarbs, timeline, zonedDate, zonedToMs } from "./planMath.ts"
 import { checkId, parseChecks } from "./checks.ts"
 import type { AidStation, AidStationItem, Item, NutritionType, PlannedItem, RaceDetail, Run, Segment } from "./racesApi.ts"
 
@@ -21,12 +21,13 @@ const item = (carbs: number | null, type: NutritionType = "Gel", size: number | 
   calcium: null,
 })
 
-const seg = (duration: number, endKm: number | null, items: Item[]): Segment => ({
+const seg = (duration: number, endKm: number | null, items: Item[], ascentM: number | null = null): Segment => ({
   id: "",
   position: 0,
   name: "",
   duration,
   endKm,
+  ascentM,
   notes: "",
   items,
   aidStation: null,
@@ -170,10 +171,10 @@ const stationAt = (id: string, name: string, kit: AidStation["kit"] = [], items:
   items,
 })
 
-const utct = (km: (number | null)[] = [18, 30, 44, 55]): Segment[] => [
-  { ...seg(180, km[0], []), id: "s1" },
+const utct = (km: (number | null)[] = [18, 30, 44, 55], climb: (number | null)[] = [null, null, null, null]): Segment[] => [
+  { ...seg(180, km[0], [], climb[0]), id: "s1" },
   {
-    ...seg(120, km[1], [{ ...item(40), name: "Gel" }]),
+    ...seg(120, km[1], [{ ...item(40), name: "Gel" }], climb[1]),
     id: "s2",
     aidStation: stationAt(
       "as1",
@@ -185,8 +186,8 @@ const utct = (km: (number | null)[] = [18, 30, 44, 55]): Segment[] => [
       [{ ...item(null), name: "Coke", aidStationId: "as1" }],
     ),
   },
-  { ...seg(180, km[2], []), id: "s3", aidStation: stationAt("as2", "AS2") },
-  { ...seg(180, km[3], []), id: "s4", aidStation: stationAt("as3", "AS3") },
+  { ...seg(180, km[2], [], climb[2]), id: "s3", aidStation: stationAt("as2", "AS2") },
+  { ...seg(180, km[3], [], climb[3]), id: "s4", aidStation: stationAt("as3", "AS3") },
 ]
 
 const runOf = (arrivals: [string, number][], startMs = inst(4)): Pick<Run, "startedAtUtc" | "arrivals"> => ({
@@ -357,5 +358,102 @@ const runOf = (arrivals: [string, number][], startMs = inst(4)): Pick<Run, "star
   assert.deepEqual(parseChecks('{"a":true,"b":false,"c":1}'), { a: true }, "only ticked entries survive")
   assert.equal(checkId("as1", "kit", 2), "as1:kit:2")
 }
+
+{
+  assert.equal(CLIMB_M_PER_MIN, 10)
+
+  const flat = checkpoints(utct())
+  assert.deepEqual(flat.map((c) => c.climbM), [0, 0, 0, 0], "no ascent data means no climb")
+  assert.deepEqual(flat.map(weightMin), [180, 300, 480, 660], "no climb: weight is planned time")
+
+  const hilly = checkpoints(utct(undefined, [600, null, 1200, 0]))
+  assert.deepEqual(hilly.map((c) => c.climbM), [600, 600, 1800, 1800], "a station arrives where the segment before it ends")
+  assert.deepEqual(hilly.map(weightMin), [240, 360, 660, 840], "1 extra minute per 10 m: 180+60, 300+60, 480+180, 660+180")
+
+  const atStart = checkpoints([{ ...seg(60, null, [], 300), aidStation: stationAt("x", "X") }, seg(60, null, [])])
+  assert.deepEqual(atStart.map((c) => c.climbM), [0, 300], "a station before the first segment has climbed nothing yet")
+
+  const behind = runOf([["as1", inst(7, 15)]])
+
+  assert.equal(
+    Math.round(prediction(checkpoints(utct(undefined, [null, null, null, null])), behind)!.predictedMs),
+    inst(9, 25),
+    "no ascent anywhere: identical to the Phase 2 prediction",
+  )
+
+  const climbed = prediction(hilly, behind)!
+  assert.equal(climbed.ratio, 195 / 180, "ratio is still actual over planned, for the display")
+  assert.equal(
+    Math.round((climbed.predictedMs - inst(4)) / 60_000),
+    323,
+    "195 + 120 + 15 min behind x 120 / 240 = 322.5: the 15 min deficit is shared out by weight, so the flat leg carries less of it",
+  )
+  assert.equal(climbed.plannedMs, inst(9))
+
+  const hard = checkpoints(utct(undefined, [1200, null, null, null]))
+  const onPlan = prediction(hard, runOf([["as1", inst(7)], ["as2", inst(9)]]))!
+  assert.equal(onPlan.predictedMs, inst(12), "exactly on plan with ascent: the prediction is the plan, climbing is not counted twice")
+  assert.equal(onPlan.range, null, "no deviation, no spread")
+  const onPlanOne = prediction(hard, runOf([["as1", inst(7)]]))!
+  assert.equal(onPlanOne.predictedMs, inst(9), "on plan at AS1 with ascent: predicted = planned")
+
+  const partial = prediction(checkpoints(utct(undefined, [600, null, null, null])), behind)!
+  assert.equal(Number.isFinite(partial.predictedMs), true, "blank ascent on the other segments is treated as flat")
+  assert.equal(Math.round((partial.predictedMs - inst(4)) / 60_000), 323)
+
+  const zeroWeight = checkpoints([{ ...seg(60, null, []), aidStation: stationAt("x", "X") }, seg(60, null, [])])
+  assert.equal(Math.round(prediction(zeroWeight, runOf([["x", inst(4, 10)]]))!.predictedMs), inst(6, 10), "weight 0 falls back to the plain planned leg")
+
+  const zeroPlanned = checkpoints([{ ...seg(0, null, [], 300), aidStation: stationAt("x", "X") }, seg(60, null, [])])
+  const zp = prediction(zeroPlanned, runOf([["x", inst(6)]]))!
+  assert.equal(zp.predictedMs, inst(6) + 60 * 60_000, "a 0 min segment with ascent has no plan to be behind: no exploding rate")
+}
+
+{
+  const cps = checkpoints(utct())
+  const minsAfterStart = (ms: number) => Math.round((ms - inst(4)) / 60_000)
+
+  const one = prediction(cps, runOf([["as1", inst(7, 15)]]))!
+  assert.equal(one.range, null, "one completed leg: single value only")
+
+  const two = prediction(cps, runOf([["as1", inst(7, 15)], ["as2", inst(9, 20)]]))!
+  assert.equal(two.next.key, "as3")
+  assert.equal(minsAfterStart(two.predictedMs), 512, "320 + 180 x (320 / 300)")
+  assert.deepEqual(
+    [minsAfterStart(two.range!.lowMs), minsAfterStart(two.range!.highMs)],
+    [507, 517],
+    "leg rates 195/180 and 125/120 give sd 0.0295: rate -/+ sd applied to the 180 min leg",
+  )
+  assert.equal(two.range!.lowMs < two.predictedMs && two.predictedMs < two.range!.highMs, true)
+
+  const steady = prediction(cps, runOf([["as1", inst(7)], ["as2", inst(9)]]))!
+  assert.equal(steady.range, null, "identical leg rates: no spread, so no range to show")
+
+  const missed = prediction(cps, runOf([["as2", inst(9, 20)]]))!
+  assert.equal(missed.range, null, "a missed station merges into one leg: still only one leg")
+
+  const skipped = prediction(cps, runOf([["as1", inst(7, 15)], ["as3", inst(12, 55)]]))!
+  assert.equal(skipped.next.key, "finish")
+  assert.notEqual(skipped.range, null, "AS2 was missed: AS1-AS3 is one merged leg, and with Start-AS1 there are two legs")
+
+  const zeroLeg = checkpoints([
+    { ...seg(0, null, []), aidStation: stationAt("a", "A") },
+    { ...seg(60, null, []), aidStation: stationAt("b", "B") },
+    seg(60, null, []),
+  ])
+  const zeroRun = runOf([["a", inst(4, 5)], ["b", inst(5, 10)]])
+  assert.equal(prediction(zeroLeg, zeroRun)!.range, null, "a zero-weight leg is skipped, leaving no usable leg")
+  assert.equal(Number.isFinite(prediction(zeroLeg, zeroRun)!.predictedMs), true)
+
+  const hilly = checkpoints(utct(undefined, [600, null, 1200, 0]))
+  const withClimb = prediction(hilly, runOf([["as1", inst(7, 15)], ["as2", inst(9, 0)]]))!
+  assert.notEqual(withClimb.range, null, "ascent weights the legs but the range still needs two legs")
+  assert.equal(withClimb.range!.lowMs <= withClimb.predictedMs && withClimb.predictedMs <= withClimb.range!.highMs, true)
+
+  assert.equal(prediction(cps, runOf([["finish", inst(15)]])), null, "nothing to predict after the finish")
+}
+
+for (const [v, m] of [["650", 650], [" 650 ", 650], ["0", 0], ["10000", 10000], ["", 0]] as const) assert.equal(parseAscent(v), m, v)
+for (const v of ["-5", "12.5", "12,5", "10001", "abc", "1e3", "99999999999"]) assert.equal(parseAscent(v), null, v)
 
 console.log("planMath ok")

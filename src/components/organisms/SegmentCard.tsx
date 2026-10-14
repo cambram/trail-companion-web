@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fluid, fmtClock, fmtDur, fmtHM, fmtKm, needed, onTarget, paceText, parseDistance, parseDur, planned, stationCarbs, type Leg } from "@/lib/planMath"
+import { fluid, fmtClock, fmtDur, fmtHM, fmtKm, needed, onTarget, paceText, parseAscent, parseDistance, parseDur, planned, stationCarbs, type Leg } from "@/lib/planMath"
 import type { NutritionItem, Segment } from "@/lib/racesApi"
 import { cn } from "@/lib/utils"
 
@@ -43,9 +43,11 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 export function SegmentCard({ index, count, segment: s, target, eta, leg, focusOnMount, library, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
   const [durText, setDurText] = useState(s.duration ? fmtHM(s.duration) : "")
   const [endText, setEndText] = useState(s.endKm !== null ? String(s.endKm) : "")
+  const [ascentText, setAscentText] = useState(s.ascentM !== null ? String(s.ascentM) : "")
   const nameRef = useRef<HTMLInputElement>(null)
   const durValid = parseDur(durText) !== null
   const endValid = parseDistance(endText) !== null
+  const ascentValid = parseAscent(ascentText) !== null
   const backwards = leg.length !== null && leg.length <= 0
 
   useEffect(() => {
@@ -137,6 +139,29 @@ export function SegmentCard({ index, count, segment: s, target, eta, leg, focusO
             {paceText(s.duration, leg.length)}
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-2.5">
+        <Field label="Ascent (m)" id={`a-${s.id}`}>
+          <Input
+            id={`a-${s.id}`}
+            className="px-2.5 sm:px-3.5"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="e.g. 600"
+            aria-invalid={!ascentValid}
+            aria-describedby={`ah-${s.id}`}
+            value={ascentText}
+            onChange={(e) => {
+              setAscentText(e.target.value)
+              const v = parseAscent(e.target.value)
+              if (v !== null) onPatch({ ascentM: e.target.value.trim() ? v : null })
+            }}
+          />
+        </Field>
+        <p id={`ah-${s.id}`} className="pb-3 text-[0.8125rem] font-semibold text-muted-foreground">
+          Optional. Sharpens live predictions on race day.
+        </p>
       </div>
 
       <div
