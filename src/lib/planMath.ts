@@ -1,4 +1,4 @@
-import type { AidStation, Item, KitEntry, NutritionItem, NutritionType, PlannedItem, RaceDetail, Run, RunState, Segment } from "./racesApi"
+import type { AidStation, KitEntry, NutritionItem, NutritionType, PlannedItem, RaceDetail, ReminderItem, Run, RunState, Segment } from "./racesApi"
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
@@ -79,23 +79,131 @@ const fluidOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.type ===
 /** Carbs eaten at the aid station before this segment. */
 export const stationCarbs = (s: Segment) => carbsOf(s.aidStation?.items ?? [])
 
-/** Segment items plus the aid station before it: station intake counts toward the following segment. */
-export const planned = (s: Segment) => carbsOf(s.items) + stationCarbs(s)
+export const MIN_REMINDER_INTERVAL_MIN = 5
+export const MAX_REMINDER_INTERVAL_MIN = 180
+export const MAX_REMINDER_NUMBER = 500
 
-export const fluid = (s: Segment) => fluidOf(s.items) + fluidOf(s.aidStation?.items ?? [])
+const GENTLE_OVER = 0.1
+const STRONG_OVER = 0.5
+const SKIP_BEFORE_MIN = 20
+const SKIP_AFTER_MIN = 15
+const SMALL_UNTIL_MIN = 30
+const SMALL_MAX_G = 25
+
+export type CarbWarning = { level: "gentle" | "strong"; over: number }
+
+export type StationNudge = { kind: "skip-before" | "skip-after" | "small"; text: string }
+
+export type AllocatedReminder = {
+  number: number
+  atMin: number
+  items: ReminderItem[]
+  carbs: number
+  target: number
+  warning: CarbWarning | null
+  nudge: StationNudge | null
+}
+
+export type SegmentAlloc = { reminders: AllocatedReminder[] }
+
+export type Allocatable = Pick<RaceDetail, "target" | "reminderIntervalMin" | "reminders" | "segments">
+
+/** Carbs per hour the segment's flasks carry, spread over its planned time. */
+export const liquidPerHour = (s: Pick<Segment, "duration" | "items">) =>
+  s.duration > 0 ? carbsOf(s.items.filter((i) => i.type === "Liquid")) / (s.duration / 60) : 0
+
+/** Grams one reminder should hold: what the hourly target leaves after the flask, per interval. Never negative. */
+export const reminderTarget = (target: number, intervalMin: number, liquid: number) =>
+  Math.max(0, Math.round(((target - liquid) * intervalMin) / 60))
+
+/** Advisory only. Up to 10% over is fine, over 50% is strong, and any carbs against a target of 0 are strong. */
+export function carbWarning(carbs: number, target: number): CarbWarning | null {
+  const over = carbs - target
+  if (over <= 0) return null
+  if (target <= 0) return { level: "strong", over }
+  const ratio = over / target
+  if (ratio <= GENTLE_OVER) return null
+  return { level: ratio > STRONG_OVER ? "strong" : "gentle", over }
+}
+
+const NUDGE_TEXT = {
+  "skip-before": "Skip this one: eat at the aid station.",
+  "skip-after": "Skip this one: you've just eaten.",
+  small: "Take something small, about 20 to 25 g.",
+} as const
+
+/** Planned minutes of every aid station, zero dwell. Shown only when it changes what the reminder asks for. */
+export function stationNudge(atMin: number, carbs: number, stationMins: number[]): StationNudge | null {
+  const before = stationMins.some((s) => s - atMin >= 0 && s - atMin <= SKIP_BEFORE_MIN)
+  const after = stationMins.some((s) => atMin - s >= 0 && atMin - s <= SKIP_AFTER_MIN)
+  if (before || after) {
+    if (carbs <= 0) return null
+    const kind = before ? "skip-before" : "skip-after"
+    return { kind, text: NUDGE_TEXT[kind] }
+  }
+  const small = stationMins.some((s) => atMin - s > SKIP_AFTER_MIN && atMin - s <= SMALL_UNTIL_MIN)
+  return small && carbs > SMALL_MAX_G ? { kind: "small", text: NUDGE_TEXT.small } : null
+}
+
+/**
+ * Reminder n is at n x interval. A segment spans [start, end) of cumulative planned minutes, so a reminder on a boundary
+ * belongs to the next segment, and one at or after the total never appears. Items stay on their reminder number, so a
+ * changed interval moves them and changing it back restores them.
+ */
+export function allocate(r: Allocatable): SegmentAlloc[] {
+  const interval = r.reminderIntervalMin
+  const stations = checkpoints(r.segments).flatMap((c) => (c.stationId ? [c.plannedMin] : []))
+  const itemsByNumber = new Map(r.reminders.map((x) => [x.number, x.items]))
+  let start = 0
+  return r.segments.map((s) => {
+    const end = start + (s.duration || 0)
+    const liquid = liquidPerHour(s)
+    const reminders: AllocatedReminder[] = []
+    if (interval > 0) {
+      for (let n = Math.max(1, Math.ceil(start / interval)); n * interval < end && n <= MAX_REMINDER_NUMBER; n++) {
+        const items = itemsByNumber.get(n) ?? []
+        const carbs = carbsOf(items)
+        const target = reminderTarget(r.target, interval, liquid)
+        const atMin = n * interval
+        reminders.push({ number: n, atMin, items, carbs, target, warning: carbWarning(carbs, target), nudge: stationNudge(atMin, carbs, stations) })
+      }
+    }
+    start = end
+    return { reminders }
+  })
+}
+
+/** Shown when the items do not suit the interval: at least 2 warned reminders and at least half of the filled ones. */
+export function planMismatch(allocs: SegmentAlloc[], target: number): { avg: number; suggestedIntervalMin: number } | null {
+  const filled = allocs.flatMap((a) => a.reminders).filter((x) => x.carbs > 0)
+  const warned = filled.filter((x) => x.warning)
+  if (target <= 0 || warned.length < 2 || warned.length * 2 < filled.length) return null
+  const avg = Math.round(filled.reduce((t, x) => t + x.carbs, 0) / filled.length)
+  const suggested = Math.round(((avg / target) * 60) / 5) * 5
+  return { avg, suggestedIntervalMin: Math.min(MAX_REMINDER_INTERVAL_MIN, Math.max(MIN_REMINDER_INTERVAL_MIN, suggested)) }
+}
+
+const reminderCarbs = (a: SegmentAlloc) => a.reminders.reduce((t, x) => t + x.carbs, 0)
+
+/** Reminders allocated to the segment, its carried liquid, and the aid station before it. */
+export const planned = (s: Segment, a: SegmentAlloc) => carbsOf(s.items) + stationCarbs(s) + reminderCarbs(a)
+
+export const fluid = (s: Segment, a: SegmentAlloc) =>
+  fluidOf(s.items) + fluidOf(s.aidStation?.items ?? []) + a.reminders.reduce((t, x) => t + fluidOf(x.items), 0)
 
 export const needed = (target: number, s: Segment) => Math.round((s.duration / 60) * (target || 0))
 
 export const pct = (p: number, n: number) => (n ? Math.min(100, Math.round((p / n) * 100)) : 0)
 
-export function raceTotals(r: RaceDetail) {
+export function raceTotals(r: Allocatable) {
+  const allocs = allocate(r)
   return r.segments.reduce(
-    (t, s) => ({
+    (t, s, i) => ({
       duration: t.duration + (s.duration || 0),
       distance: Math.max(t.distance, s.endKm ?? 0),
-      planned: t.planned + planned(s),
+      planned: t.planned + planned(s, allocs[i]),
       need: t.need + needed(r.target, s),
-      fluid: t.fluid + fluid(s),
+      fluid: t.fluid + fluid(s, allocs[i]),
     }),
     { duration: 0, distance: 0, planned: 0, need: 0, fluid: 0 },
   )
@@ -124,14 +232,23 @@ export function etas(r: Pick<RaceDetail, "startTime" | "segments">) {
   return r.segments.map((s) => (t += s.duration || 0))
 }
 
-export type CrewStop = { station: AidStation; eta: number | null; packNext: Item[] }
+export type CrewStop = { station: AidStation; eta: number | null; packNext: PlannedItem[] }
 
-/** Aid stations in race order with planned arrival and what goes in the vest for the segment after. */
-export function crewStops(r: Pick<RaceDetail, "startTime" | "segments">): CrewStop[] {
+/** Aid stations in race order with planned arrival and what goes in the vest for the segment after: its reminders, then its flask. */
+export function crewStops(r: Allocatable & Pick<RaceDetail, "startTime">): CrewStop[] {
   const arrivals = etas(r)
+  const allocs = allocate(r)
   const start = r.startTime ? clockToMin(r.startTime) : null
   return r.segments.flatMap((s, i) =>
-    s.aidStation ? [{ station: s.aidStation, eta: i === 0 ? start : arrivals[i - 1], packNext: s.items }] : [],
+    s.aidStation
+      ? [
+          {
+            station: s.aidStation,
+            eta: i === 0 ? start : arrivals[i - 1],
+            packNext: [...allocs[i].reminders.flatMap((x) => x.items), ...s.items],
+          },
+        ]
+      : [],
   )
 }
 
@@ -461,9 +578,9 @@ export const kitLabel = (k: KitEntry) => (k.certainty === "Maybe" ? `${k.label} 
 export type Prep = { station: string; kit: string[]; food: string[]; packNext: string[] }
 
 /** Card 4: what to have ready at the next checkpoint. The same data as the crew plan; null at the finish. */
-export function prepFor(next: Checkpoint | null, segments: Segment[]): Prep | null {
+export function prepFor(next: Checkpoint | null, race: Allocatable): Prep | null {
   if (!next?.stationId) return null
-  const stop = crewStops({ startTime: null, segments }).find((s) => s.station.id === next.stationId)
+  const stop = crewStops({ ...race, startTime: null }).find((s) => s.station.id === next.stationId)
   if (!stop) return null
   return {
     station: stop.station.name,

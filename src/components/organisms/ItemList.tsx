@@ -7,17 +7,18 @@ import type { NutritionItem, PlannedItem } from "@/lib/racesApi"
 type Props = {
   items: PlannedItem[]
   library: NutritionItem[] | undefined
-  heading?: string
+  heading?: string | null
+  emptyText?: string
   lead?: React.ReactNode
   onAdd: (nutritionItemId: string) => Promise<void>
   onDelete: (id: string) => void
   onMove: (id: string, d: number) => void
 }
 
-export function ItemList({ items, library, heading = "Nutrition, in order", lead, onAdd, onDelete, onMove }: Props) {
+export function ItemList({ items, library, heading = "Nutrition, in order", emptyText, lead, onAdd, onDelete, onMove }: Props) {
   return (
     <div>
-      <p className="mb-2 text-xs font-extrabold text-muted-foreground">{heading}</p>
+      {heading !== null && <p className="mb-2 text-xs font-extrabold text-muted-foreground">{heading}</p>}
       {lead}
       {items.length === 0 && !lead && (
         <p className="border-t border-line py-2 text-[0.8125rem] text-muted-foreground">Nothing added yet.</p>
@@ -56,7 +57,7 @@ export function ItemList({ items, library, heading = "Nutrition, in order", lead
           </span>
         </div>
       ))}
-      <AddNutrition library={library} onPick={onAdd} />
+      <AddNutrition library={library} onPick={onAdd} emptyText={emptyText} />
     </div>
   )
 }

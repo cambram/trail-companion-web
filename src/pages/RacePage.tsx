@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card"
 import { useNutrition } from "@/hooks/useNutrition"
 import { useRace } from "@/hooks/useRace"
 import { ApiError } from "@/lib/api"
-import { etas, legs } from "@/lib/planMath"
+import { allocate, etas, legs, planMismatch } from "@/lib/planMath"
 import { racesApi } from "@/lib/racesApi"
 
 export default function RacePage() {
@@ -25,6 +25,7 @@ export default function RacePage() {
   const {
     race, loadError, saveError, patchRace, moveSegment, moveItem, patchSegment, addSegment, deleteSegment, addItem, deleteItem, deleteRace,
     patchAidStation, addAidStation, deleteAidStation, moveAidStation, addStationItem, deleteStationItem, moveStationItem,
+    addReminderItem, deleteReminderItem, moveReminderItem,
   } = useRace(id)
   const { user, authFetch } = useAuth()
   const { items: library } = useNutrition()
@@ -36,6 +37,11 @@ export default function RacePage() {
 
   const arrivals = race ? etas(race) : []
   const spans = race ? legs(race.segments) : []
+  const allocs = race ? allocate(race) : []
+  const mismatch = race ? planMismatch(allocs, race.target) : null
+  const shown = new Set(allocs.flatMap((a) => a.reminders.map((r) => r.number)))
+  const hidden = race ? race.reminders.filter((x) => !shown.has(x.number)).length : 0
+  const hasReminders = allocs.some((a) => a.reminders.length > 0)
 
   const run = async (fn: () => Promise<unknown>) => {
     setActionError(undefined)
@@ -43,6 +49,16 @@ export default function RacePage() {
       await fn()
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Something went wrong")
+    }
+  }
+
+  const guarded = async (fn: () => Promise<unknown>) => {
+    setActionError(undefined)
+    try {
+      await fn()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Something went wrong")
+      throw e
     }
   }
 
@@ -96,6 +112,20 @@ export default function RacePage() {
             Live tracking
           </Link>
           {(saveError || actionError) && <ErrorText>{saveError ?? actionError}</ErrorText>}
+          {hasReminders && (
+            <p className="px-1 text-[0.8125rem] font-semibold text-muted-foreground">
+              Reminders follow your planned times. Off pace? Follow the rules, not the clock.
+            </p>
+          )}
+          {mismatch && (
+            <Card>
+              <b>Your items don't suit a {race.reminderIntervalMin} minute interval</b>
+              <p className="text-[0.8125rem] text-muted-foreground">
+                Reminders average {mismatch.avg} g against a target of {race.target} g an hour. An interval of about{" "}
+                {mismatch.suggestedIntervalMin} minutes, or smaller items, would fit.
+              </p>
+            </Card>
+          )}
           {race.segments.map((s, i) => {
             const a = s.aidStation
             return (
@@ -138,6 +168,7 @@ export default function RacePage() {
                 )}
                 <SegmentCard
                   index={i}
+                  alloc={allocs[i]}
                   count={race.segments.length}
                   segment={s}
                   target={race.target}
@@ -147,15 +178,11 @@ export default function RacePage() {
                   library={library}
                   onPatch={(patch) => patchSegment(s.id, patch)}
                   onDelete={() => run(() => deleteSegment(s.id))}
-                  onAddItem={async (nutritionItemId) => {
-                    setActionError(undefined)
-                    try {
-                      await addItem(s.id, nutritionItemId)
-                    } catch (e) {
-                      setActionError(e instanceof Error ? e.message : "Something went wrong")
-                      throw e
-                    }
-                  }}
+                  onAddItem={(nutritionItemId) => guarded(() => addItem(s.id, nutritionItemId))}
+                  startTime={race.startTime}
+                  onAddReminderItem={(n, nutritionItemId) => guarded(() => addReminderItem(n, nutritionItemId))}
+                  onDeleteReminderItem={(n, itemId) => run(() => deleteReminderItem(n, itemId))}
+                  onMoveReminderItem={(n, itemId, d) => moveReminderItem(n, itemId, d)}
                   onMove={(d) => moveSegment(s.id, d)}
                   onMoveItem={(itemId, d) => moveItem(s.id, itemId, d)}
                   onDeleteItem={(itemId) => run(() => deleteItem(s.id, itemId))}
@@ -163,6 +190,11 @@ export default function RacePage() {
               </Fragment>
             )
           })}
+          {hidden > 0 && (
+            <p className="px-1 text-center text-[0.8125rem] text-muted-foreground">
+              {hidden} reminder{hidden === 1 ? "" : "s"} outside the planned race time keep their items.
+            </p>
+          )}
           {race.segments.length === 0 && (
             <Card className="items-center py-[26px] text-center">
               <b>No segments yet</b>

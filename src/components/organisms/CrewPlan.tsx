@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { clockToMin, crewStops, fluid, fmtClock, fmtDur, kitLabel, planned } from "@/lib/planMath"
+import { allocate, clockToMin, crewStops, fluid, fmtClock, fmtDur, kitLabel, planned } from "@/lib/planMath"
 import type { RaceDetail } from "@/lib/racesApi"
 
 function CrewList({ title, entries }: { title: string; entries: string[] }) {
@@ -23,6 +23,7 @@ function CrewList({ title, entries }: { title: string; entries: string[] }) {
 export function CrewPlan({ race }: { race: RaceDetail }) {
   const [showNutrition, setShowNutrition] = useState(false)
   const stops = crewStops(race)
+  const allocs = allocate(race)
 
   return (
     <div className="grid gap-3.5">
@@ -65,12 +66,12 @@ export function CrewPlan({ race }: { race: RaceDetail }) {
       </Button>
       {showNutrition && (
         <Card>
-          {race.segments.map((s) => (
+          {race.segments.map((s, i) => (
             <div key={s.id} className="flex items-center gap-3 border-t border-line pt-2 first:border-t-0 first:pt-0">
               <span className="min-w-0 flex-1 truncate font-semibold">{s.name || "Segment"}</span>
               <span className="text-[0.8125rem] text-muted-foreground">{fmtDur(s.duration)}</span>
-              <span className="w-14 text-right text-[0.8125rem] font-bold">{planned(s)} g</span>
-              <span className="w-16 text-right text-[0.8125rem] font-bold">{fluid(s)} ml</span>
+              <span className="w-14 text-right text-[0.8125rem] font-bold">{planned(s, allocs[i])} g</span>
+              <span className="w-16 text-right text-[0.8125rem] font-bold">{fluid(s, allocs[i])} ml</span>
             </div>
           ))}
         </Card>

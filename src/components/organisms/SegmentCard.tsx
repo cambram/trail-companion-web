@@ -5,16 +5,18 @@ import { StatusPill } from "@/components/atoms/StatusPill"
 import { ConfirmButton } from "@/components/molecules/ConfirmButton"
 import { StatRail } from "@/components/molecules/StatRail"
 import { ItemList } from "@/components/organisms/ItemList"
+import { ReminderRail } from "@/components/organisms/ReminderRail"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { SegmentPatch } from "@/hooks/useRace"
-import { fluid, fmtClock, fmtDur, fmtHM, fmtKm, needed, onTarget, paceText, parseAscent, parseDistance, parseDur, planned, stationCarbs, type Leg } from "@/lib/planMath"
+import { fluid, fmtClock, fmtDur, fmtHM, fmtKm, needed, onTarget, paceText, parseAscent, parseDistance, parseDur, planned, stationCarbs, type Leg, type SegmentAlloc } from "@/lib/planMath"
 import type { NutritionItem, Segment } from "@/lib/racesApi"
 import { cn } from "@/lib/utils"
 
 type Props = {
+  alloc: SegmentAlloc
   index: number
   count: number
   segment: Segment
@@ -29,6 +31,10 @@ type Props = {
   onAddItem: (nutritionItemId: string) => Promise<void>
   onDeleteItem: (id: string) => void
   onMoveItem: (id: string, d: number) => void
+  startTime: string | null
+  onAddReminderItem: (number: number, nutritionItemId: string) => Promise<void>
+  onDeleteReminderItem: (number: number, id: string) => void
+  onMoveReminderItem: (number: number, id: string, d: number) => void
 }
 
 function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
@@ -40,7 +46,7 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   )
 }
 
-export function SegmentCard({ index, count, segment: s, target, eta, leg, focusOnMount, library, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem }: Props) {
+export function SegmentCard({ index, count, segment: s, alloc, target, eta, leg, focusOnMount, library, onPatch, onDelete, onMove, onAddItem, onDeleteItem, onMoveItem, startTime, onAddReminderItem, onDeleteReminderItem, onMoveReminderItem }: Props) {
   const [durText, setDurText] = useState(s.duration ? fmtHM(s.duration) : "")
   const [endText, setEndText] = useState(s.endKm !== null ? String(s.endKm) : "")
   const [ascentText, setAscentText] = useState(s.ascentM !== null ? String(s.ascentM) : "")
@@ -56,10 +62,11 @@ export function SegmentCard({ index, count, segment: s, target, eta, leg, focusO
     nameRef.current?.select()
   }, [focusOnMount])
 
-  const p = planned(s)
-  const f = fluid(s)
+  const p = planned(s, alloc)
+  const f = fluid(s, alloc)
   const n = needed(target, s)
   const ok = onTarget(p, n)
+  const liquids = library?.filter((item) => item.type === "Liquid")
 
   return (
     <Card id={`seg-${s.id}`}>
@@ -186,9 +193,20 @@ export function SegmentCard({ index, count, segment: s, target, eta, leg, focusO
         />
       </Field>
 
-      <ItemList
-        items={s.items}
+      <ReminderRail
+        reminders={alloc.reminders}
+        startTime={startTime}
         library={library}
+        onAdd={onAddReminderItem}
+        onDelete={onDeleteReminderItem}
+        onMove={onMoveReminderItem}
+      />
+
+      <ItemList
+        heading="Carried liquid"
+        emptyText="No liquid items in your library."
+        items={s.items}
+        library={liquids}
         onAdd={onAddItem}
         onDelete={onDeleteItem}
         onMove={onMoveItem}

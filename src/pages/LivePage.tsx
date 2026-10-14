@@ -60,7 +60,7 @@ export default function LivePage() {
   const result = live ? segmentResult(cps, live) : null
   const guess = live ? prediction(cps, live) : null
   const pacing = live ? pacingOptions(cps, live, now) : null
-  const prep = race ? prepFor(next, race.segments) : null
+  const prep = race ? prepFor(next, race) : null
   const summary = live ? finishSummary(cps, live) : null
   const lock = race && state ? startLock(race, state) : null
   const startMs = run ? Date.parse(run.startedAtUtc) : 0

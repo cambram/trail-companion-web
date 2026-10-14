@@ -433,6 +433,13 @@ For repeated sections (for example segments), each card opens with a header row 
 - The segment after a station shows one muted, read-only row at the top of its item list: `Tent` icon, "At {station}", station carbs. The segment's progress bar stays one colour; its numbers include station carbs.
 - Empty gaps between segments show a quiet dashed "+ Aid station" pill.
 
+### Reminder timeline
+
+- Each segment card holds a "From the timeline" block: a 2px `--line` rail on the left, one 12px hollow dot per reminder, race time in bold with the clock ETA muted beside it, and `carbs / target` right-aligned.
+- Gentle warning: muted text only. Strong warning: red status pill (`StatusPill ok={false}`) plus a muted bullet list. No amber.
+- Aid station nudge: muted line with the `Tent` icon under the marker.
+- The hero shows "Reminder every [N] min" under the fluid line; the input is transparent like the other hero inputs.
+
 ### 6.11 List rows
 
 Rows inside a card are separated by hairlines, not gaps.

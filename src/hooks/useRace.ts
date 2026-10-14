@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { useAuth } from "@/auth/AuthContext"
 import type { ApiError } from "@/lib/api"
-import { racesApi, type AidStation, type RaceDetail, type Segment } from "@/lib/racesApi"
+import { racesApi, type AidStation, type RaceDetail, type ReminderItem, type Segment } from "@/lib/racesApi"
 
 const SAVE_DELAY_MS = 500
 const RACE_KEY = "race"
@@ -15,7 +15,7 @@ function move<T>(arr: T[], i: number, d: number) {
   return copy
 }
 
-export type RacePatch = Partial<Pick<RaceDetail, "name" | "target" | "startTime" | "raceDate">>
+export type RacePatch = Partial<Pick<RaceDetail, "name" | "target" | "startTime" | "raceDate" | "reminderIntervalMin">>
 export type SegmentPatch = Partial<Pick<Segment, "name" | "duration" | "endKm" | "ascentM" | "notes">>
 export type AidStationPatch = Partial<Pick<AidStation, "name" | "notes" | "kit">>
 
@@ -30,6 +30,12 @@ function withStation(r: RaceDetail, stationId: string, fn: (a: AidStation) => Ai
 
 const stationOf = (r: RaceDetail | undefined, stationId: string) =>
   r?.segments.find((s) => s.aidStation?.id === stationId)?.aidStation ?? undefined
+
+function withReminder(r: RaceDetail, n: number, fn: (items: ReminderItem[]) => ReminderItem[]): RaceDetail {
+  const items = fn(r.reminders.find((x) => x.number === n)?.items ?? [])
+  const rest = r.reminders.filter((x) => x.number !== n)
+  return { ...r, reminders: items.length ? [...rest, { number: n, items }].sort((a, b) => a.number - b.number) : rest }
+}
 
 export function useRace(id: string) {
   const { authFetch } = useAuth()
@@ -56,6 +62,7 @@ export function useRace(id: string) {
               items: byPosition(s.items),
               aidStation: s.aidStation && { ...s.aidStation, items: byPosition(s.aidStation.items) },
             })),
+            reminders: r.reminders.map((x) => ({ ...x, items: byPosition(x.items) })).sort((a, b) => a.number - b.number),
           }),
         )
         .catch(setLoadError),
@@ -84,7 +91,7 @@ export function useRace(id: string) {
     const r = raceRef.current
     if (!r || !r.name.trim()) return
     api
-      .updateRace(id, { name: r.name.trim(), target: r.target, startTime: r.startTime, raceDate: r.raceDate })
+      .updateRace(id, { name: r.name.trim(), target: r.target, startTime: r.startTime, raceDate: r.raceDate, reminderIntervalMin: r.reminderIntervalMin })
       .then(() => setSaveError(undefined))
       .catch((e: Error) => setSaveError(e.message))
   }, [api, id])
@@ -307,6 +314,40 @@ export function useRace(id: string) {
     [api, id, load],
   )
 
+  const addReminderItem = useCallback(
+    async (n: number, nutritionItemId: string) => {
+      const item = await api.createReminderItem(id, n, nutritionItemId)
+      setRace((r) => r && withReminder(r, n, (items) => [...items, item]))
+    },
+    [api, id],
+  )
+
+  const deleteReminderItem = useCallback(
+    async (n: number, itemId: string) => {
+      await api.deleteReminderItem(id, n, itemId)
+      setRace((r) => r && withReminder(r, n, (items) => items.filter((i) => i.id !== itemId)))
+    },
+    [api, id],
+  )
+
+  const moveReminderItem = useCallback(
+    async (n: number, itemId: string, d: number) => {
+      const current = raceRef.current
+      const items = current?.reminders.find((x) => x.number === n)?.items
+      if (!current || !items) return
+      const moved = move(items, items.findIndex((i) => i.id === itemId), d)
+      if (moved === items) return
+      setRace(withReminder(current, n, () => moved))
+      try {
+        await api.reorderReminderItems(id, n, moved.map((i) => i.id))
+      } catch (e) {
+        setSaveError((e as Error).message)
+        load()
+      }
+    },
+    [api, id, load],
+  )
+
   const deleteRace = useCallback(() => api.deleteRace(id), [api, id])
 
   return {
@@ -330,5 +371,8 @@ export function useRace(id: string) {
     addStationItem,
     deleteStationItem,
     moveStationItem,
+    addReminderItem,
+    deleteReminderItem,
+    moveReminderItem,
   }
 }

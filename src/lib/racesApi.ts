@@ -8,11 +8,12 @@ export type Race = {
   target: number
   startTime: string | null
   raceDate: string | null
+  reminderIntervalMin: number
   createdAtUtc: string
   role: RaceRole
 }
 
-export type RaceRequest = Pick<Race, "name" | "target" | "startTime" | "raceDate">
+export type RaceRequest = Pick<Race, "name" | "target" | "startTime" | "raceDate"> & { reminderIntervalMin?: number }
 
 export type NutritionType = "Gel" | "Liquid" | "Solid" | "Pill"
 
@@ -39,6 +40,10 @@ export type Item = PlannedItem & { segmentId: string }
 
 export type AidStationItem = PlannedItem & { aidStationId: string }
 
+export type ReminderItem = PlannedItem & { reminderNumber: number }
+
+export type Reminder = { number: number; items: ReminderItem[] }
+
 export type KitCertainty = "Planned" | "Maybe"
 
 export type KitEntry = { label: string; certainty: KitCertainty }
@@ -63,7 +68,7 @@ export type Segment = {
   aidStation: AidStation | null
 }
 
-export type RaceDetail = Race & { segments: Segment[]; pin: string | null }
+export type RaceDetail = Race & { segments: Segment[]; reminders: Reminder[]; pin: string | null }
 
 export type CrewMember = { appUserId: string; displayName: string; joinedAtUtc: string }
 
@@ -147,4 +152,10 @@ export const racesApi = (f: Fetch) => ({
     f<void>(`/api/races/${raceId}/aid-stations/${aidStationId}/items/${id}`, json("DELETE")),
   reorderStationItems: (raceId: string, aidStationId: string, ids: string[]) =>
     f<void>(`/api/races/${raceId}/aid-stations/${aidStationId}/items/order`, json("PUT", { ids })),
+  createReminderItem: (raceId: string, number: number, nutritionItemId: string) =>
+    f<ReminderItem>(`/api/races/${raceId}/reminders/${number}/items`, json("POST", { nutritionItemId })),
+  deleteReminderItem: (raceId: string, number: number, id: string) =>
+    f<void>(`/api/races/${raceId}/reminders/${number}/items/${id}`, json("DELETE")),
+  reorderReminderItems: (raceId: string, number: number, ids: string[]) =>
+    f<void>(`/api/races/${raceId}/reminders/${number}/items/order`, json("PUT", { ids })),
 })

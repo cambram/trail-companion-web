@@ -1,9 +1,10 @@
 import { Plus } from "lucide-react"
+import { useState } from "react"
 
 import { StatRail } from "@/components/molecules/StatRail"
 import { Button } from "@/components/ui/button"
 import type { RacePatch } from "@/hooks/useRace"
-import { fmtDur, onTarget, raceTotals } from "@/lib/planMath"
+import { MAX_REMINDER_INTERVAL_MIN, MIN_REMINDER_INTERVAL_MIN, fmtDur, onTarget, raceTotals } from "@/lib/planMath"
 import type { RaceDetail } from "@/lib/racesApi"
 
 type Props = {
@@ -48,6 +49,11 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
       <div className="mt-1 text-[0.8125rem] font-semibold opacity-60">
         Fluid planned <span className="font-extrabold opacity-100">{t.fluid} ml</span>
       </div>
+      <ReminderInterval
+        value={race.reminderIntervalMin}
+        target={race.target}
+        onChange={(min) => onPatch({ reminderIntervalMin: min })}
+      />
       <div className="mt-3.5">
         <StatRail planned={t.planned} need={t.need} inverse>
           <span className="opacity-65">
@@ -93,6 +99,37 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
     <div className="min-w-0 rounded-[14px] bg-primary-foreground/10 px-3 py-2">
       <div className="text-xs font-semibold opacity-60">{label}</div>
       <div className="text-[1.05rem] font-extrabold tracking-[-0.02em] whitespace-nowrap">{children}</div>
+    </div>
+  )
+}
+
+const validInterval = (text: string) => {
+  const n = Number(text)
+  return /^\d{1,3}$/.test(text.trim()) && n >= MIN_REMINDER_INTERVAL_MIN && n <= MAX_REMINDER_INTERVAL_MIN
+}
+
+function ReminderInterval({ value, target, onChange }: { value: number; target: number; onChange: (min: number) => void }) {
+  const [text, setText] = useState(String(value))
+  const valid = validInterval(text)
+  const shown = valid ? Number(text) : value
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] font-semibold">
+      <span className="opacity-60">Reminder every</span>
+      <input
+        aria-label="Reminder interval in minutes"
+        inputMode="numeric"
+        aria-invalid={!valid}
+        className="w-9 bg-transparent text-right font-extrabold outline-none"
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value)
+          if (validInterval(e.target.value)) onChange(Number(e.target.value))
+        }}
+        onBlur={() => setText(String(value))}
+      />
+      <span className="opacity-60">min</span>
+      {!valid && <span className="basis-full text-red-soft">Use 5 to 180 minutes.</span>}
+      <span className="opacity-60">· {Math.round((target * shown) / 60)} g per reminder before flasks</span>
     </div>
   )
 }

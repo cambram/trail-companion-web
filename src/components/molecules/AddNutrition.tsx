@@ -11,9 +11,10 @@ import type { NutritionItem } from "@/lib/racesApi"
 type Props = {
   library: NutritionItem[] | undefined
   onPick: (nutritionItemId: string) => Promise<void>
+  emptyText?: string
 }
 
-export function AddNutrition({ library, onPick }: Props) {
+export function AddNutrition({ library, onPick, emptyText = "Your nutrition library is empty." }: Props) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState("")
   const searchRef = useRef<HTMLInputElement>(null)
@@ -23,7 +24,7 @@ export function AddNutrition({ library, onPick }: Props) {
   if (library.length === 0) {
     return (
       <div className="mt-3 grid gap-2">
-        <p className="text-[0.8125rem] text-muted-foreground">Your nutrition library is empty.</p>
+        <p className="text-[0.8125rem] text-muted-foreground">{emptyText}</p>
         <Button variant="secondary" size="sm" className="justify-self-start" asChild>
           <Link to="/nutrition">Add nutrition</Link>
         </Button>
