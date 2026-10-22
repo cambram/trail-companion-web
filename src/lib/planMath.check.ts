@@ -618,3 +618,14 @@ assert.equal(allocate(timelineRace([120], [rem(1, 30), rem(2, 30), rem(3, 30)], 
 }
 
 console.log("planMath ok")
+
+{
+  const r = timelineRace([80, 28, 60], [], { stations: [1, 2] })
+  r.segments[1].aidStation = { ...aid(), name: "Early" }
+  r.segments[2].aidStation = { ...aid(), name: "Late" }
+  const at = (n: number) => allocate(r).flatMap((a) => a.reminders).find((x) => x.atMin === n)!
+  assert.equal(at(90).rule, "skip-before")
+  assert.equal(at(90).station, "Late", "skip-before names the station ahead, not the one behind")
+  assert.equal(at(120).rule, "skip-after")
+  assert.equal(at(120).station, "Late", "skip-after names the station just left")
+}

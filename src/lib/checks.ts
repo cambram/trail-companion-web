@@ -2,7 +2,7 @@ export type Ticks = Record<string, true>
 
 const key = (runId: string) => `crewmate:checks:${runId}`
 
-export const checkId = (stationId: string, group: string, index: number) => `${stationId}:${group}:${index}`
+export const checkId = (stationId: string, group: string, index: number | string) => `${stationId}:${group}:${index}`
 
 /** Anything that is not an object of `true` values reads as no ticks. */
 export function parseChecks(raw: string | null): Ticks {

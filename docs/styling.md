@@ -58,6 +58,10 @@ All colors are semantic tokens. Components never use raw hex values. They refere
 | `--green-soft` | `#E6F6EC` | Green pill background |
 | `--red` | `#D23B3B` | Error, "short", destructive armed state |
 | `--red-soft` | `#FCEBEB` | Red pill background |
+| `--amber` | `#8A5A00` | "Over" target, warnings that are not failures |
+| `--amber-soft` | `#FDF1D3` | Amber pill background |
+| `--violet` | `#5B3FD6` | Climbing and crew information |
+| `--violet-soft` | `#EEE9FF` | Violet pill background |
 | `--nutrition-gel` / `-soft` | `#6D28D9` / `#F1EBFD` | Gel type badge (category, see 2.4) |
 | `--nutrition-liquid` / `-soft` | `#0F766E` / `#E3F5F3` | Liquid type badge |
 | `--nutrition-solid` / `-soft` | `#92400E` / `#FDF1DC` | Solid type badge |
@@ -82,6 +86,10 @@ All colors are semantic tokens. Components never use raw hex values. They refere
 | `--green-soft` | `#12271C` |
 | `--red` | `#FF7B7B` |
 | `--red-soft` | `#2B1717` |
+| `--amber` | `#F5C26B` |
+| `--amber-soft` | `#2A2112` |
+| `--violet` | `#B7A2FF` |
+| `--violet-soft` | `#1E1938` |
 | `--nutrition-gel` / `-soft` | `#C4A7FF` / `#231B36` |
 | `--nutrition-liquid` / `-soft` | `#5ED3C6` / `#0F2624` |
 | `--nutrition-solid` / `-soft` | `#F5C26B` / `#2A2112` |
@@ -95,7 +103,7 @@ Note the inversion: in dark mode `--btn` becomes white, so the hero card and pri
 - **Status pills:** always pair `--{color}` text with `--{color}-soft` background. Never put status text on white directly for badges.
 - **Inversion pairing:** anything on `--btn` uses `--btn-ink`. Inside the hero, secondary text is `--btn-ink` at 60 to 65% opacity, tertiary at 45%.
 - **Overlays on the hero:** translucent white (`rgba(255,255,255,.14)` for pill fields, `.2` for the progress track). These are the only sanctioned hard-coded colors.
-- **Thresholds:** a progress metric is "on target" (green) at 95% or more of its goal, otherwise "short" (red). "Over" is still green with an "N over" label. Do not introduce amber unless a design explicitly calls for it.
+- **Thresholds:** a progress metric is "on target" (green) at 95% or more of its goal, otherwise "short" (red). "Over" is amber with an "N over" label. Amber also marks warnings that need attention but are not failures (low fluid, long gap). Violet marks climbing and crew information. Neither is decoration.
 
 ### 2.4 Category scale (nutrition type)
 
@@ -309,7 +317,11 @@ Anatomy, top to bottom:
 3. **Big number** (`.big`): 33.6px, 800, with a trailing unit span at 1rem / 600 / 60% opacity.
 4. **Progress rail** (margin-top 14px), recolored: track `rgba(255,255,255,.2)`, fill `var(--btn-ink)`.
 5. **Rail caption:** left text at 65% opacity, right status text at 90%.
-6. **Primary action:** full-width `onhero` button, margin-top 16px.
+6. **Target stepper:** in the title row, a `−`/`+` pair around the g/h input.
+7. **Ascent profile** (`AscentProfile`), margin-top 16px.
+8. **Stats grid:** six tiles (Distance, Ascent, Time, Avg pace, Start, Finish ETA) in three columns, plus a full-width Date row.
+
+There is no action button in the hero. Add segment sits at the bottom of the Plan tab.
 
 Inputs inside the hero are transparent (`background:transparent; border:0; padding:0; min-height:36px; border-radius:0`) and use `currentColor` at 45% opacity for placeholders. The hero shows status as plain text, not as a pill, because pills do not read on the inverted surface.
 
@@ -399,6 +411,8 @@ border-radius:999px; padding:5px 12px; font: 700 .75rem;
 | `blue` | `--blue-soft` | `--blue` |
 | `green` | `--green-soft` | `--green` |
 | `red` | `--red-soft` | `--red` |
+| `amber` | `--amber-soft` | `--amber` |
+| `violet` | `--violet-soft` | `--violet` |
 
 Every status pill starts with a 6px dot (`background: currentColor; border-radius:50%`) followed by the label ("On target", "12 g short"). The dot is what makes them read as status rather than tags.
 
@@ -423,8 +437,26 @@ A thin bar plus a caption row. Used for anything that measures progress toward a
 For repeated sections (for example segments), each card opens with a header row (`gap:10px; margin-bottom:14px`):
 
 1. **Number badge** (`.seg-num`): 38px square, `border-radius:14px`, `--field` fill, 800, 14.4px, centered.
-2. **Inline title input** that grows.
-3. **Up/down icon buttons** for reordering.
+2. **Title** that grows. The whole header is one toggle button (`aria-expanded`, `aria-controls` the body); the name `Input` lives in the body, not the header.
+3. **Chevron** in a 36px `--secondary` circle on the right. It rotates 180 degrees when open.
+
+The body is always mounted and uses the `hidden` attribute when closed, so field state survives a collapse. Reorder arrows sit in the body.
+
+### Tab bar
+
+`TabBar` (molecule): sticky at the top, a `--card` pill with a 4-column grid, `role="tablist"`. The active tab is `--primary` fill with `--primary-foreground` text, others `--muted-foreground`; each tab is at least 36px high. The panel carries `id="panel-{tab}"` and `aria-labelledby="tab-{tab}"`. The tab is the `?tab=` query parameter (`plan`, `audit`, `crew`, `pack`); `plan` is the default and omits the parameter. No roving tabindex or arrow keys yet.
+
+### Insight tile
+
+`InsightTile` (molecule): `--card` card, `rounded-xl`, shadow. A tone pill label on top, one large 800 number, then an optional muted line of context. The label carries the tone (`TONE_CLASSES` in `src/lib/tone.ts`: green, red, amber, violet, muted); the number is always ink.
+
+### Balance bar
+
+In the Audit tab, each event shows a 96px by 8px `--secondary` track with a centre line. The fill grows from the centre: green to the right for a surplus, red to the left for a deficit, width proportional to `|balance|` against a shared scale (at least 80 g), capped at half the track. It is `role="img"` with the signed balance as its label. Audit dividers (segment headings) are normal cards with a 4px violet left border.
+
+### Fixed bottom bar
+
+The race page pins "Start live tracking" and the copy-crew-brief icon button to the bottom: `fixed inset-x-0 bottom-0`, `--background` at 92% with backdrop blur, inner column `max-w-[484px]`, bottom padding `max(12px, env(safe-area-inset-bottom))`. The page leaves room for it.
 
 ### Aid station card
 
@@ -435,8 +467,21 @@ For repeated sections (for example segments), each card opens with a header row 
 
 ### Reminder timeline
 
-- Each segment card holds a "From the timeline" block: a 2px `--line` rail on the left, one 12px hollow dot per reminder, race time in bold with the clock ETA muted beside it, and `carbs / target` right-aligned.
-- Gentle warning: muted text only. Strong warning: red status pill (`StatusPill ok={false}`) plus a muted bullet list. No amber.
+- Each segment card holds a "From the timeline" block (`ReminderRail`): a 2px `--line` rail on the left, one 12px hollow dot per reminder, race time in bold with the clock ETA muted beside it, and `carbs / target` right-aligned.
+- State comes from `reminderState()` in `planInsights.ts`. The pill uses the tone, the node is the dot's border:
+
+| State | Tone | Node |
+|---|---|---|
+| `ok` | green | `border-green` |
+| `short` | red | `border-red` |
+| `empty` | red | `border-red` |
+| `over` | amber | `border-amber` |
+| `small` | violet | `border-violet` |
+| `skipped` | muted | dashed `border-muted-foreground` |
+| `skip-food` | amber | `border-amber` |
+
+- Each reminder shows one state pill: over target is an amber pill ("N g over"), short and empty are red, small is violet, skipped is muted. A strong warning (over 50%) also keeps a muted bullet list of fixes beneath the pill. Marker dots follow the state; skipped is a dashed muted dot.
+- The rail heading counts only reminders that ask for food (full and small rules) and sums only those grams, so skipped reminders never inflate the total.
 - Aid station nudge: muted line with the `Tent` icon under the marker.
 - The hero shows "Reminder every [N] min" under the fluid line; the input is transparent like the other hero inputs.
 
@@ -572,7 +617,7 @@ The project uses Tailwind v4 (config lives in CSS) and shadcn/ui (`radix-nova`, 
 | `--line` | `--border` | Hairlines |
 | `transparent` | `--input` | Inputs have no border at rest |
 | `--blue` | `--ring` | Focus |
-| n/a | `--ink-soft`, `--blue`, `--blue-soft`, `--green`, `--green-soft`, `--red`, `--red-soft`, `--shadow` | Extra tokens, exposed to Tailwind |
+| n/a | `--ink-soft`, `--blue`, `--blue-soft`, `--green`, `--green-soft`, `--red`, `--red-soft`, `--amber`, `--amber-soft`, `--violet`, `--violet-soft`, `--shadow` | Extra tokens, exposed to Tailwind |
 
 ### 10.2 `src/index.css`
 
@@ -609,6 +654,10 @@ The project uses Tailwind v4 (config lives in CSS) and shadcn/ui (`radix-nova`, 
   --color-green-soft: var(--green-soft);
   --color-red: var(--red);
   --color-red-soft: var(--red-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
 
   --radius-md: var(--radius);                  /* 14px: fields */
   --radius-xl: calc(var(--radius) + 8px);      /* 22px: cards  */
@@ -642,6 +691,8 @@ The project uses Tailwind v4 (config lives in CSS) and shadcn/ui (`radix-nova`, 
   --blue: #2563EB;  --blue-soft: #E7EFFD;
   --green: #12804B; --green-soft: #E6F6EC;
   --red: #D23B3B;   --red-soft: #FCEBEB;
+  --amber: #8A5A00; --amber-soft: #FDF1D3;
+  --violet: #5B3FD6; --violet-soft: #EEE9FF;
   --shadow: 0 1px 2px rgba(16,24,40,.04), 0 10px 26px rgba(16,24,40,.05);
   color-scheme: light;
 }
@@ -670,6 +721,8 @@ The project uses Tailwind v4 (config lives in CSS) and shadcn/ui (`radix-nova`, 
     --blue: #7FA9FF;  --blue-soft: #1B2436;
     --green: #5BD48D; --green-soft: #12271C;
     --red: #FF7B7B;   --red-soft: #2B1717;
+    --amber: #F5C26B; --amber-soft: #2A2112;
+    --violet: #B7A2FF; --violet-soft: #1E1938;
     --shadow: none;
     color-scheme: dark;
   }
@@ -745,6 +798,9 @@ Where each piece from the prototype lives in `src/components`.
 | `ui` (shadcn) | `Button`, `Input`, `Textarea`, `Label`, `Card` | 6.1, 6.3, 6.7 |
 | **atoms** | `Heading` (h1), `Subtitle`, `Pill` (variants blue/green/red with dot), `IconButton`, `Circle`, `ProgressBar`, `SectionLabel`, `ErrorText`, `Readout` | 6.4, 6.5, 6.8, 6.9, 6.12, 6.7 |
 | **molecules** | `FormField` (label + input + error), `PillField` (input + unit), `ProgressRail` (bar + caption + status pill), `ListRow` (name + amount + controls), `PageHeader` (title + subtitle or back-title variant), `ConfirmButton` (two-tap quiet delete), `EmptyState` | 5.2, 6.3, 6.6, 6.9, 6.11, 8.6 |
+| **atoms (tone)** | `StatusPill` takes a `Tone`; `Tone` and `TONE_CLASSES` live in `src/lib/tone.ts` | 6.8 |
+| **molecules (race page)** | `TabBar`, `InsightTile`, `ArrivalWindowRow` (early, planned, late clocks; `AidStationCard` still has the markup inline) | 6.10 |
+| **organisms (race page)** | `PlanTab`, `AuditTab`, `CrewTab`, `PackTab`, `PlanInsights`, `CourseStrip`, `AscentProfile`, `CaffeineChart`, `ReminderRail`; hook `useTicks` in `src/hooks` | 6.10 |
 | **organisms** | `HeroCard`, `LoginForm`, `EntityCard` (list card with icon, name, rail), `SectionCard` (index badge + title + fields + list + add row), `AddRow` | 6.2, 6.10, 5.4 |
 | pages | Compose organisms inside the `.app` frame | 5.1, 5.3 |
 
@@ -786,7 +842,7 @@ Component rules:
 
 - Don't add borders or rings to cards. Depth is shadow (light) or fill (dark).
 - Don't use uppercase or wide-tracked labels, which is the current default in the shadcn label and card title.
-- Don't introduce new accent colors, gradients or decorative color.
+- Don't introduce accent colors beyond the documented tokens. No gradients. No decorative color.
 - Don't use a modal for simple confirmations.
 - Don't add hover animations, entrance animations or page transitions.
 - Don't shrink form text below 16px.

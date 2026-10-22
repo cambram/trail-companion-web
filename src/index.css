@@ -31,6 +31,10 @@
   --color-green-soft: var(--green-soft);
   --color-red: var(--red);
   --color-red-soft: var(--red-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
   --color-nutrition-gel: var(--nutrition-gel);
   --color-nutrition-gel-soft: var(--nutrition-gel-soft);
   --color-nutrition-liquid: var(--nutrition-liquid);
@@ -75,6 +79,10 @@
   --green-soft: #E6F6EC;
   --red: #D23B3B;
   --red-soft: #FCEBEB;
+  --amber: #8A5A00;
+  --amber-soft: #FDF1D3;
+  --violet: #5B3FD6;
+  --violet-soft: #EEE9FF;
   --nutrition-gel: #6D28D9;
   --nutrition-gel-soft: #F1EBFD;
   --nutrition-liquid: #0F766E;
@@ -114,6 +122,10 @@
     --green-soft: #12271C;
     --red: #FF7B7B;
     --red-soft: #2B1717;
+    --amber: #F5C26B;
+    --amber-soft: #2A2112;
+    --violet: #B7A2FF;
+    --violet-soft: #1E1938;
     --nutrition-gel: #C4A7FF;
     --nutrition-gel-soft: #231B36;
     --nutrition-liquid: #5ED3C6;
@@ -154,6 +166,10 @@
   --green-soft: #12271C;
   --red: #FF7B7B;
   --red-soft: #2B1717;
+  --amber: #F5C26B;
+  --amber-soft: #2A2112;
+  --violet: #B7A2FF;
+  --violet-soft: #1E1938;
   --nutrition-gel: #C4A7FF;
   --nutrition-gel-soft: #231B36;
   --nutrition-liquid: #5ED3C6;

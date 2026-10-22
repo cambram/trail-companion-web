@@ -72,9 +72,9 @@ export const sizeUnit = (type: NutritionType) => (type === "Liquid" ? "ml" : typ
 export const sizeText = (n: Pick<NutritionItem, "type" | "size">) =>
   n.size === null ? "" : `${n.size} ${sizeUnit(n.type)}`
 
-const carbsOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.carbs ?? 0), 0)
+export const carbsOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.carbs ?? 0), 0)
 
-const fluidOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.type === "Liquid" ? (i.size ?? 0) : 0), 0)
+export const fluidOf = (items: PlannedItem[]) => items.reduce((a, i) => a + (i.type === "Liquid" ? (i.size ?? 0) : 0), 0)
 
 /** Carbs eaten at the aid station before this segment. */
 export const stationCarbs = (s: Segment) => carbsOf(s.aidStation?.items ?? [])
@@ -102,6 +102,8 @@ export type AllocatedReminder = {
   target: number
   warning: CarbWarning | null
   nudge: StationNudge | null
+  rule: StationRule
+  station: string | null
 }
 
 export type SegmentAlloc = { reminders: AllocatedReminder[] }
@@ -132,17 +134,20 @@ const NUDGE_TEXT = {
   small: "Take something small, about 20 to 25 g.",
 } as const
 
+export type StationRule = "full" | "skip-before" | "skip-after" | "small"
+
+/** How close a reminder is to an aid station (zero dwell). Before wins over after. */
+export function stationRule(atMin: number, stationMins: number[]): StationRule {
+  if (stationMins.some((s) => s - atMin >= 0 && s - atMin <= SKIP_BEFORE_MIN)) return "skip-before"
+  if (stationMins.some((s) => atMin - s >= 0 && atMin - s <= SKIP_AFTER_MIN)) return "skip-after"
+  return stationMins.some((s) => atMin - s > SKIP_AFTER_MIN && atMin - s <= SMALL_UNTIL_MIN) ? "small" : "full"
+}
+
 /** Planned minutes of every aid station, zero dwell. Shown only when it changes what the reminder asks for. */
 export function stationNudge(atMin: number, carbs: number, stationMins: number[]): StationNudge | null {
-  const before = stationMins.some((s) => s - atMin >= 0 && s - atMin <= SKIP_BEFORE_MIN)
-  const after = stationMins.some((s) => atMin - s >= 0 && atMin - s <= SKIP_AFTER_MIN)
-  if (before || after) {
-    if (carbs <= 0) return null
-    const kind = before ? "skip-before" : "skip-after"
-    return { kind, text: NUDGE_TEXT[kind] }
-  }
-  const small = stationMins.some((s) => atMin - s > SKIP_AFTER_MIN && atMin - s <= SMALL_UNTIL_MIN)
-  return small && carbs > SMALL_MAX_G ? { kind: "small", text: NUDGE_TEXT.small } : null
+  const rule = stationRule(atMin, stationMins)
+  if (rule === "skip-before" || rule === "skip-after") return carbs <= 0 ? null : { kind: rule, text: NUDGE_TEXT[rule] }
+  return rule === "small" && carbs > SMALL_MAX_G ? { kind: "small", text: NUDGE_TEXT.small } : null
 }
 
 /**
@@ -152,7 +157,8 @@ export function stationNudge(atMin: number, carbs: number, stationMins: number[]
  */
 export function allocate(r: Allocatable): SegmentAlloc[] {
   const interval = r.reminderIntervalMin
-  const stations = checkpoints(r.segments).flatMap((c) => (c.stationId ? [c.plannedMin] : []))
+  const cps = checkpoints(r.segments).filter((c) => c.stationId)
+  const stations = cps.map((c) => c.plannedMin)
   const itemsByNumber = new Map(r.reminders.map((x) => [x.number, x.items]))
   let start = 0
   return r.segments.map((s) => {
@@ -165,7 +171,9 @@ export function allocate(r: Allocatable): SegmentAlloc[] {
         const carbs = carbsOf(items)
         const target = reminderTarget(r.target, interval, liquid)
         const atMin = n * interval
-        reminders.push({ number: n, atMin, items, carbs, target, warning: carbWarning(carbs, target), nudge: stationNudge(atMin, carbs, stations) })
+        const rule = stationRule(atMin, stations)
+        const near = rule === "full" ? null : rule === "skip-before" ? cps.find((c) => c.plannedMin - atMin >= 0 && c.plannedMin - atMin <= SKIP_BEFORE_MIN) : cps.filter((c) => c.plannedMin <= atMin).at(-1)
+        reminders.push({ number: n, atMin, items, carbs, target, warning: carbWarning(carbs, target), nudge: stationNudge(atMin, carbs, stations), rule, station: near?.name ?? null })
       }
     }
     start = end

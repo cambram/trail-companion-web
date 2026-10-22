@@ -1,21 +1,31 @@
-import { Plus } from "lucide-react"
+import { Minus, Plus } from "lucide-react"
 import { useState } from "react"
 
 import { StatRail } from "@/components/molecules/StatRail"
-import { Button } from "@/components/ui/button"
+import { AscentProfile } from "@/components/organisms/AscentProfile"
 import type { RacePatch } from "@/hooks/useRace"
-import { MAX_REMINDER_INTERVAL_MIN, MIN_REMINDER_INTERVAL_MIN, fmtDur, onTarget, raceTotals } from "@/lib/planMath"
+import {
+  MAX_REMINDER_INTERVAL_MIN,
+  MIN_REMINDER_INTERVAL_MIN,
+  clockToMin,
+  fmtClock,
+  fmtDur,
+  fmtPace,
+  onTarget,
+  raceTotals,
+} from "@/lib/planMath"
 import type { RaceDetail } from "@/lib/racesApi"
 
 type Props = {
   race: RaceDetail
   onPatch: (patch: RacePatch) => void
-  onAddSegment: () => void
-  adding: boolean
 }
 
-export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
+const clampTarget = (n: number) => Math.min(300, Math.max(0, n))
+
+export function Hero({ race, onPatch }: Props) {
   const t = raceTotals(race)
+  const ascent = race.segments.reduce((a, s) => a + (s.ascentM ?? 0), 0)
   const n = race.segments.length
   return (
     <div className="rounded-[26px] bg-primary p-[18px] text-primary-foreground">
@@ -29,17 +39,34 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
           value={race.name}
           onChange={(e) => onPatch({ name: e.target.value })}
         />
-        <span className="flex flex-none items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3 py-1">
+        <span className="flex flex-none items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Lower target"
+            className="grid size-8 place-items-center rounded-full bg-primary-foreground/15"
+            onClick={() => onPatch({ target: clampTarget(race.target - 5) })}
+          >
+            <Minus aria-hidden className="size-4" />
+          </button>
           <input
             aria-label="Carb target per hour"
             type="number"
             inputMode="numeric"
             min={0}
+            max={300}
             className="w-11 bg-transparent text-right font-bold outline-none"
             value={race.target}
-            onChange={(e) => onPatch({ target: Math.max(0, Math.floor(Number(e.target.value)) || 0) })}
+            onChange={(e) => onPatch({ target: clampTarget(Math.floor(Number(e.target.value)) || 0) })}
           />
           <span className="text-[0.8125rem] font-semibold opacity-70">g/h</span>
+          <button
+            type="button"
+            aria-label="Raise target"
+            className="grid size-8 place-items-center rounded-full bg-primary-foreground/15"
+            onClick={() => onPatch({ target: clampTarget(race.target + 5) })}
+          >
+            <Plus aria-hidden className="size-4" />
+          </button>
         </span>
       </div>
       <div className="mt-3.5 text-[0.8125rem] font-semibold opacity-60">Carbs planned</div>
@@ -64,18 +91,14 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
           </span>
         </StatRail>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4">
+        <AscentProfile segments={race.segments} />
+      </div>
+      <div className="mt-4 grid grid-cols-3 gap-2">
         <Stat label="Distance">{t.distance ? `${t.distance.toFixed(1)} km` : "–"}</Stat>
+        <Stat label="Ascent">{ascent ? `${ascent.toLocaleString("en")} m` : "–"}</Stat>
         <Stat label="Time">{t.duration ? fmtDur(t.duration) : "–"}</Stat>
-        <Stat label="Date">
-          <input
-            aria-label="Race date"
-            type="date"
-            className="w-full bg-transparent font-extrabold outline-none [color-scheme:inherit]"
-            value={race.raceDate ?? ""}
-            onChange={(e) => onPatch({ raceDate: e.target.value || null })}
-          />
-        </Stat>
+        <Stat label="Avg pace">{t.duration && t.distance ? `${fmtPace(t.duration / t.distance)} /km` : "–"}</Stat>
         <Stat label="Start">
           <input
             aria-label="Race start time"
@@ -85,11 +108,19 @@ export function Hero({ race, onPatch, onAddSegment, adding }: Props) {
             onChange={(e) => onPatch({ startTime: e.target.value ? `${e.target.value}:00` : null })}
           />
         </Stat>
+        <Stat label="Finish ETA">{race.startTime && t.duration ? fmtClock(clockToMin(race.startTime) + t.duration) : "–"}</Stat>
+        <div className="col-span-3">
+          <Stat label="Date">
+            <input
+              aria-label="Race date"
+              type="date"
+              className="w-full bg-transparent font-extrabold outline-none [color-scheme:inherit]"
+              value={race.raceDate ?? ""}
+              onChange={(e) => onPatch({ raceDate: e.target.value || null })}
+            />
+          </Stat>
+        </div>
       </div>
-      <Button variant="onHero" block className="mt-4" onClick={onAddSegment} disabled={adding}>
-        <Plus aria-hidden />
-        Add segment
-      </Button>
     </div>
   )
 }

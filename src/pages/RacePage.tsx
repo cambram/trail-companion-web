@@ -1,23 +1,33 @@
-import { Users } from "lucide-react"
-import { Fragment, useState } from "react"
-import { Link, Navigate, useNavigate, useParams } from "react-router"
+import { Share, Users } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router"
 
 import { AppFrame } from "@/components/atoms/AppFrame"
 import { ErrorText } from "@/components/atoms/ErrorText"
 import { useAuth } from "@/auth/AuthContext"
 import { BackHeader } from "@/components/molecules/BackHeader"
+import { TabBar } from "@/components/molecules/TabBar"
 import { ConfirmButton } from "@/components/molecules/ConfirmButton"
 import { CrewPlan } from "@/components/organisms/CrewPlan"
 import { Hero } from "@/components/organisms/Hero"
-import { AidStationCard } from "@/components/organisms/AidStationCard"
-import { SegmentCard } from "@/components/organisms/SegmentCard"
+import { AuditTab } from "@/components/organisms/AuditTab"
+import { CrewTab } from "@/components/organisms/CrewTab"
+import { PackTab } from "@/components/organisms/PackTab"
+import { PlanTab } from "@/components/organisms/PlanTab"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { useNutrition } from "@/hooks/useNutrition"
 import { useRace } from "@/hooks/useRace"
 import { ApiError } from "@/lib/api"
-import { allocate, etas, legs, planMismatch } from "@/lib/planMath"
+import { crewBrief } from "@/lib/planInsights"
 import { racesApi } from "@/lib/racesApi"
+import { cn } from "@/lib/utils"
+
+const TABS = [
+  { id: "plan", label: "Plan" },
+  { id: "audit", label: "Audit" },
+  { id: "crew", label: "Crew" },
+  { id: "pack", label: "Pack" },
+]
 
 export default function RacePage() {
   const { id = "" } = useParams()
@@ -32,16 +42,26 @@ export default function RacePage() {
   const [newId, setNewId] = useState<string>()
   const [adding, setAdding] = useState(false)
   const [actionError, setActionError] = useState<string>()
+  const [params, setParams] = useSearchParams()
+  const [copied, setCopied] = useState(false)
+  const copyTimer = useRef<number>(undefined)
+  useEffect(() => () => window.clearTimeout(copyTimer.current), [])
+  const requested = params.get("tab")
+  const tab = TABS.some((t) => t.id === requested) ? requested! : "plan"
+  const setTab = (t: string) => setParams(t === "plan" ? {} : { tab: t }, { replace: true })
+  const copyBrief = async () => {
+    if (!race) return
+    try {
+      await navigator.clipboard.writeText(crewBrief(race))
+      setCopied(true)
+      window.clearTimeout(copyTimer.current)
+      copyTimer.current = window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setTab("crew")
+    }
+  }
 
   if (loadError instanceof ApiError && loadError.status === 404) return <Navigate to="/" replace />
-
-  const arrivals = race ? etas(race) : []
-  const spans = race ? legs(race.segments) : []
-  const allocs = race ? allocate(race) : []
-  const mismatch = race ? planMismatch(allocs, race.target) : null
-  const shown = new Set(allocs.flatMap((a) => a.reminders.map((r) => r.number)))
-  const hidden = race ? race.reminders.filter((x) => !shown.has(x.number)).length : 0
-  const hasReminders = allocs.some((a) => a.reminders.length > 0)
 
   const run = async (fn: () => Promise<unknown>) => {
     setActionError(undefined)
@@ -93,7 +113,7 @@ export default function RacePage() {
   }
 
   return (
-    <AppFrame>
+    <AppFrame className="pb-28">
       <BackHeader to="/" label="Back to races" title="Race plan">
         <Link
           to={`/races/${id}/share`}
@@ -107,100 +127,31 @@ export default function RacePage() {
       {!race && !loadError && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}
       {race && (
         <div className="grid gap-3.5">
-          <Hero race={race} onPatch={patchRace} onAddSegment={onAdd} adding={adding} />
-          <Link to={`/races/${id}/live`} className={buttonVariants({ variant: "secondary", block: true })}>
-            Live tracking
-          </Link>
+          <Hero race={race} onPatch={patchRace} />
           {(saveError || actionError) && <ErrorText>{saveError ?? actionError}</ErrorText>}
-          {hasReminders && (
-            <p className="px-1 text-[0.8125rem] font-semibold text-muted-foreground">
-              Reminders follow your planned times. Off pace? Follow the rules, not the clock.
-            </p>
-          )}
-          {mismatch && (
-            <Card>
-              <b>Your items don't suit a {race.reminderIntervalMin} minute interval</b>
-              <p className="text-[0.8125rem] text-muted-foreground">
-                Reminders average {mismatch.avg} g against a target of {race.target} g an hour. An interval of about{" "}
-                {mismatch.suggestedIntervalMin} minutes, or smaller items, would fit.
-              </p>
-            </Card>
-          )}
-          {race.segments.map((s, i) => {
-            const a = s.aidStation
-            return (
-              <Fragment key={s.id}>
-                {a ? (
-                  <AidStationCard
-                    key={a.id}
-                    station={a}
-                    canMoveUp={i > 1}
-                    canMoveDown={i < race.segments.length - 1}
-                    library={library}
-                    onPatch={(patch) => patchAidStation(a.id, patch)}
-                    onDelete={() => run(() => deleteAidStation(a.id))}
-                    onMove={(d) => moveAidStation(a.id, d)}
-                    onAddItem={async (nutritionItemId) => {
-                      setActionError(undefined)
-                      try {
-                        await addStationItem(a.id, nutritionItemId)
-                      } catch (e) {
-                        setActionError(e instanceof Error ? e.message : "Something went wrong")
-                        throw e
-                      }
-                    }}
-                    onDeleteItem={(itemId) => run(() => deleteStationItem(a.id, itemId))}
-                    onMoveItem={(itemId, d) => moveStationItem(a.id, itemId, d)}
-                  />
-                ) : (
-                  i > 0 && (
-                    <div className="flex justify-center">
-                      <Button
-                        variant="quiet"
-                        size="sm"
-                        className="rounded-full border border-dashed border-line px-3.5"
-                        onClick={() => run(() => addAidStation(s.id))}
-                      >
-                        + Aid station
-                      </Button>
-                    </div>
-                  )
-                )}
-                <SegmentCard
-                  index={i}
-                  alloc={allocs[i]}
-                  count={race.segments.length}
-                  segment={s}
-                  target={race.target}
-                  eta={arrivals[i]}
-                  leg={spans[i]}
-                  focusOnMount={s.id === newId}
-                  library={library}
-                  onPatch={(patch) => patchSegment(s.id, patch)}
-                  onDelete={() => run(() => deleteSegment(s.id))}
-                  onAddItem={(nutritionItemId) => guarded(() => addItem(s.id, nutritionItemId))}
-                  startTime={race.startTime}
-                  onAddReminderItem={(n, nutritionItemId) => guarded(() => addReminderItem(n, nutritionItemId))}
-                  onDeleteReminderItem={(n, itemId) => run(() => deleteReminderItem(n, itemId))}
-                  onMoveReminderItem={(n, itemId, d) => moveReminderItem(n, itemId, d)}
-                  onMove={(d) => moveSegment(s.id, d)}
-                  onMoveItem={(itemId, d) => moveItem(s.id, itemId, d)}
-                  onDeleteItem={(itemId) => run(() => deleteItem(s.id, itemId))}
-                />
-              </Fragment>
-            )
-          })}
-          {hidden > 0 && (
-            <p className="px-1 text-center text-[0.8125rem] text-muted-foreground">
-              {hidden} reminder{hidden === 1 ? "" : "s"} outside the planned race time keep their items.
-            </p>
-          )}
-          {race.segments.length === 0 && (
-            <Card className="items-center py-[26px] text-center">
-              <b>No segments yet</b>
-              <p className="text-[0.8125rem] text-muted-foreground">Add one for each stretch between aid stations.</p>
-            </Card>
-          )}
+          <TabBar tabs={TABS} value={tab} onChange={setTab} />
+          <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+            {tab === "plan" && (
+              <PlanTab
+                race={race}
+                library={library}
+                newId={newId}
+                adding={adding}
+                onAddSegment={onAdd}
+                run={run}
+                guarded={guarded}
+                actions={{
+                  patchSegment, moveSegment, moveItem, addItem, deleteItem, deleteSegment,
+                  patchAidStation, addAidStation, deleteAidStation, moveAidStation,
+                  addStationItem, deleteStationItem, moveStationItem,
+                  addReminderItem, deleteReminderItem, moveReminderItem,
+                }}
+              />
+            )}
+            {tab === "audit" && <AuditTab race={race} />}
+            {tab === "crew" && <CrewTab race={race} />}
+            {tab === "pack" && <PackTab race={race} />}
+          </div>
           <div className="mt-2 flex justify-center">
             <ConfirmButton
               label="Delete race"
@@ -212,6 +163,25 @@ export default function RacePage() {
                 })
               }
             />
+          </div>
+        </div>
+      )}
+      {race && (
+        <div className="fixed inset-x-0 bottom-0 z-20 bg-background/92 px-[18px] pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur">
+          <div className="mx-auto flex max-w-[484px] gap-2">
+            <Link to={`/races/${id}/live`} className={cn(buttonVariants({ variant: "default", block: true }), "flex-1")}>
+              <span aria-hidden className="size-2 rounded-full bg-green" />
+              Start live tracking
+            </Link>
+            <Button
+              variant="icon"
+              size="icon"
+              className="size-[54px] flex-none bg-card shadow-card"
+              aria-label={copied ? "Crew brief copied" : "Copy crew brief"}
+              onClick={copyBrief}
+            >
+              <Share aria-hidden />
+            </Button>
           </div>
         </div>
       )}
