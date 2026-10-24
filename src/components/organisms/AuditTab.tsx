@@ -62,7 +62,7 @@ function BalanceBar({ e, scale }: { e: AuditEvent; scale: number }) {
 
 function Row({ time, elapsed, node, children }: { time?: string; elapsed?: string; node?: string; children: React.ReactNode }) {
   return (
-    <li className="grid grid-cols-[52px_1fr] gap-x-2">
+    <li className="grid grid-cols-[52px_minmax(0,1fr)] gap-x-2">
       <div className="pt-3 text-right tabular-nums">
         {time && <p className="text-sm font-extrabold">{time}</p>}
         {elapsed && <p className="text-xs text-muted-foreground">{elapsed}</p>}

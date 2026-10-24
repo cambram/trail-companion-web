@@ -133,7 +133,7 @@ export default function RacePage() {
       {loadError && <ErrorText>{loadError.message}</ErrorText>}
       {!race && !loadError && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}
       {race && (
-        <div className="grid gap-3.5">
+        <div className="grid grid-cols-1 gap-3.5">
           <Hero race={race} onPatch={patchRace} />
           {(saveError || actionError) && <ErrorText>{saveError ?? actionError}</ErrorText>}
           <TabBar tabs={TABS} value={tab} onChange={setTab} />

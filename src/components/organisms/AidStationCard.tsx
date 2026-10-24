@@ -56,7 +56,7 @@ export function AidStationCard({ open = true, onToggle = () => {}, plannedMin, s
         </span>
       </button>
 
-      <div id={`aid-body-${a.id}`} hidden={!open} className="grid gap-[inherit]">
+      <div id={`aid-body-${a.id}`} hidden={!open} className="grid grid-cols-1 gap-[inherit]">
       <div className="grid gap-1.5">
         <Label htmlFor={`aname-${a.id}`}>Aid station name</Label>
         <Input

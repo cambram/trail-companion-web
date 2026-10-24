@@ -80,7 +80,7 @@ export default function LivePage() {
       {loadError && !(loadError instanceof ApiError && loadError.status === 404) && <ErrorText>{loadError.message}</ErrorText>}
       {!(race && state) && !loadError && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}
       {race && state && (
-        <div className="grid gap-3.5">
+        <div className="grid grid-cols-1 gap-3.5">
           <div className="rounded-[26px] bg-primary p-[18px] text-primary-foreground">
             <div className="flex items-center justify-between gap-3">
               <b className="min-w-0 flex-1 truncate text-[1.35rem] font-extrabold tracking-[-0.03em]">{race.name}</b>

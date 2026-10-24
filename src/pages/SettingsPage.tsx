@@ -97,7 +97,7 @@ export default function SettingsPage() {
         <span className="size-[42px]" />
       </header>
 
-      <div className="grid gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5">
         <Card>
           <CardTitle>Account</CardTitle>
           <dl className="grid gap-2 text-[0.8125rem]">

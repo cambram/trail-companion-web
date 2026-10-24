@@ -51,7 +51,7 @@ export default function SharePage() {
       {loadError && !(loadError instanceof ApiError && loadError.status === 404) && <ErrorText>{loadError.message}</ErrorText>}
       {!race && !loadError && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}
       {race && (
-        <div className="grid gap-3.5">
+        <div className="grid grid-cols-1 gap-3.5">
           <Card className="items-center text-center">
             <p className="text-xs font-extrabold text-muted-foreground">Race PIN</p>
             <p className="text-[2rem] font-extrabold tracking-[0.12em] tabular-nums">

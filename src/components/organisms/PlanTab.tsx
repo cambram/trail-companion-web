@@ -65,7 +65,7 @@ export function PlanTab({ race, library, newId, adding, onAddSegment, run, guard
   const hasReminders = allocs.some((a) => a.reminders.length > 0)
 
   return (
-    <div className="grid gap-3.5">
+    <div className="grid grid-cols-1 gap-3.5">
       <CourseStrip race={race} onJump={jump} />
       <PlanInsights race={race} />
       {hasReminders && (

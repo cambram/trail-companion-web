@@ -103,7 +103,7 @@ export function Hero({ race, onPatch }: Props) {
           <input
             aria-label="Race start time"
             type="time"
-            className="w-full bg-transparent font-extrabold outline-none [color-scheme:inherit]"
+            className="w-full min-w-0 bg-transparent font-extrabold outline-none [color-scheme:inherit]"
             value={race.startTime?.slice(0, 5) ?? ""}
             onChange={(e) => onPatch({ startTime: e.target.value ? `${e.target.value}:00` : null })}
           />
@@ -114,7 +114,7 @@ export function Hero({ race, onPatch }: Props) {
             <input
               aria-label="Race date"
               type="date"
-              className="w-full bg-transparent font-extrabold outline-none [color-scheme:inherit]"
+              className="w-full min-w-0 bg-transparent font-extrabold outline-none [color-scheme:inherit]"
               value={race.raceDate ?? ""}
               onChange={(e) => onPatch({ raceDate: e.target.value || null })}
             />

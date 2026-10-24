@@ -138,7 +138,7 @@ export function SegmentCard({ open = true, onToggle = () => {}, stats, cue, segm
         </StatRail>
       )}
 
-      <div id={`seg-body-${s.id}`} hidden={!open} className="grid gap-[inherit]">
+      <div id={`seg-body-${s.id}`} hidden={!open} className="grid grid-cols-1 gap-[inherit]">
       <Field label="Segment name" id={`n-${s.id}`}>
         <Input
           id={`n-${s.id}`}

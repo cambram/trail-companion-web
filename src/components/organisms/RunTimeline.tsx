@@ -19,7 +19,7 @@ export function RunTimeline({ rows, startMs, timeZone, lastIndex, onEditStart, o
     <Card>
       <p className="text-xs font-extrabold text-muted-foreground">Progress</p>
       <ul>
-        <li className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 border-t border-line py-[9px]">
+        <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 border-t border-line py-[9px]">
           <span className="font-semibold">Start</span>
           <span className="text-[0.8125rem] text-muted-foreground">Plan</span>
           <span className="min-w-[64px] text-right">
@@ -32,7 +32,7 @@ export function RunTimeline({ rows, startMs, timeZone, lastIndex, onEditStart, o
           return (
             <li
               key={checkpoint.key}
-              className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-1 border-t border-line py-[9px]"
+              className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 border-t border-line py-[9px]"
             >
               <span className="min-w-0 truncate font-semibold">{checkpoint.name}</span>
               <span className="text-[0.8125rem] text-muted-foreground">{fmtInstant(plannedMs, timeZone)}</span>
