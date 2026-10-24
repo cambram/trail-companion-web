@@ -17,7 +17,7 @@ npm run dev            # http://localhost:5173 (must match API Cors:AllowedOrigi
 | `src/components/ui` | shadcn primitives (add more with `npx shadcn add <name>`) |
 | `src/components/atoms` | Smallest app pieces (`Heading`, `ErrorText`, `StatusPill`) |
 | `src/components/molecules` | Atoms/primitives combined (`FormField`, `StatRail`, `ConfirmButton`, `BackHeader`, `TimeEdit`, `TabBar`, `InsightTile`, `ArrivalWindowRow`) |
-| `src/components/organisms` | Self-contained sections, props-only (`AuthForm`, `Hero`, `SegmentCard`, `ItemList`, `RaceCard`, `NewRaceForm`, `CrewPlan`, `RunTimeline`, `InsightCards`, `PrepChecklist`, `FinishSummary`; race page tabs `PlanTab`, `AuditTab`, `CrewTab`, `PackTab`; plan pieces `PlanInsights`, `CourseStrip`, `AscentProfile`, `CaffeineChart`, `ReminderRail`, `AidStationCard`) |
+| `src/components/organisms` | Self-contained sections, props-only (`AuthForm`, `Hero`, `SegmentCard`, `ItemList`, `RaceCard`, `NewRaceForm`, `CrewPlan`, `RunTimeline`, `InsightCards`, `PrepChecklist`, `FinishSummary`; race page tabs `PlanTab`, `AuditTab`, `CrewTab`, `PackTab`; plan pieces `PlanInsights`, `CourseStrip`, `AscentProfile`, `CaffeineChart`, `ReminderRail`, `AidStationCard`; print sheets `PrintCover`, `PrintPrep`, `PrintSegment`, `PrintStation`, `PrintAudit`, `PrintBalance`) |
 | `src/pages` | Routes: wire organisms to hooks/data |
 | `src/hooks` | `useRaces` (list), `useRace` (one race: debounced race/segment saves, reorder, item add/delete), `useCrew` (crew list, remove member), `useTicks` (per-device checklist ticks for the Crew and Pack tabs), `useRun` (live run: polling, focus refresh, arrival and correction calls) |
 | `src/auth` | `AuthProvider`, `useAuth`, `ProtectedRoute` |
@@ -51,6 +51,7 @@ Login 429 disables the button for 60s (fixed-window limit).
 | `/join`, `/join/:pin` | Join a race's crew by PIN |
 | `/races/:id` | Race plan in four tabs: Plan, Audit, Crew, Pack. Selected with `?tab=plan\|audit\|crew\|pack` (`plan` is the default and drops the parameter). Renders the read-only crew view when `role` is `Crew` |
 | `/races/:id/share` | Owner: PIN, QR, crew list |
+| `/races/:id/print` | Printable plan: cover, prep, a sheet per segment and aid station, audit trail, carb balance. "Save as PDF" opens the browser print dialog (always light theme) |
 | `/races/:id/live` | Live tracking for the owner and crew: start, arrivals, corrections, cards 1–4, finish summary |
 | `/nutrition` | Nutrition library |
 | `/settings` | Account info, name, theme, password, log out, delete account |
@@ -65,6 +66,7 @@ System, Light or Dark from Settings. Stored as `localStorage.theme` (`light`/`da
 node --experimental-strip-types src/lib/planMath.check.ts   # totals, pace, ETA, live-run cards
 node --experimental-strip-types src/lib/planInsights.check.ts # reminder state, audit trail, caffeine, crew brief, bags
 node --experimental-strip-types src/lib/flags.check.ts      # feature flag parsing
+node --experimental-strip-types src/lib/printPlan.check.ts   # print sheet order, cover numbers, labels
 ```
 
 ## Live tracking

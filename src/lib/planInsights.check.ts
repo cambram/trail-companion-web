@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 
 import {
-  ARRIVAL_WINDOW, arrivalWindow, ascentProfile, auditTrail, bags, caffeineAt, caffeineDoses, countItems, crewBrief,
+  ARRIVAL_WINDOW, arrivalWindow, ascentProfile, auditTrail, bags, balanceSeries, caffeineAt, caffeineDoses, countItems, crewBrief,
   effortCue, insights, positionAt, reminderState, segmentStats, shoppingList,
 } from "./planInsights.ts"
 import type { AidStation, NutritionType, PlannedItem, RaceDetail, Segment } from "./racesApi.ts"
@@ -154,6 +154,19 @@ const noNaN = (v: unknown) => assert.ok(!JSON.stringify(v, (_, x) => (typeof x =
   const p = ascentProfile([seg(60, 10, 100), seg(60, 20, 50, [], station("A"))])
   assert.deepEqual(p?.points, [[0, 0], [10, 100], [20, 150]])
   assert.deepEqual(p?.stops, [[10, 100]])
+}
+
+// balanceSeries: spikes at intakes, ends at netAtFinish, empty without time
+{
+  const r = race([seg(60, 10, null, [it("Flask", 30, {}, "Liquid")]), seg(60, 20, null)])
+  const pts = balanceSeries(r)
+  assert.equal(pts[0].min, 0)
+  assert.equal(pts.at(-1)!.min, 120)
+  assert.equal(pts.at(-1)!.value, insights(r).netAtFinish)
+  assert.deepEqual(pts.map((p) => p.min), [...pts.map((p) => p.min)].sort((a, b) => a - b))
+  assert.deepEqual(balanceSeries(race([])), [])
+  assert.deepEqual(balanceSeries(race([seg(0, null, null)])), [])
+  noNaN(pts)
 }
 
 console.log("planInsights.check OK")

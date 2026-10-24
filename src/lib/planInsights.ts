@@ -169,6 +169,21 @@ export function auditTrail(race: Allocatable & Pick<RaceDetail, "startTime">): A
   return evs.sort((x, y) => x.min - y.min || RANK[x.kind] - RANK[y.kind])
 }
 
+export type BalancePoint = { min: number; value: number }
+
+/** Net carbs against burn over the race. Each intake time appears twice (just before, just after) so a chart draws the spike. */
+export function balanceSeries(race: Allocatable): BalancePoint[] {
+  const d = intakes(race)
+  if (d.total <= 0) return []
+  const out = (min: number) => (race.target * min) / 60
+  const times = [...new Set([0, d.total, ...d.events.map((e) => e.min), ...d.trickle.map((s) => s.t0)])].sort((a, b) => a - b)
+  return times.flatMap((min) => {
+    const before = { min, value: carbsIn(d, min, true) - out(min) }
+    const after = { min, value: carbsIn(d, min) - out(min) }
+    return before.value === after.value ? [after] : [before, after]
+  })
+}
+
 export type Gap = { lenMin: number; fromMin: number; toMin: number }
 
 function longestGap(d: ReturnType<typeof intakes>): Gap | null {

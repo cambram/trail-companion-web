@@ -217,3 +217,26 @@
     outline-offset: 2px;
   }
 }
+
+@page {
+  size: A4 portrait;
+  margin: 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-sheet {
+    break-after: page;
+  }
+  .print-sheet:last-of-type {
+    break-after: auto;
+  }
+  .print-avoid {
+    break-inside: avoid;
+  }
+}

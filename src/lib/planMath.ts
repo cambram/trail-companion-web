@@ -85,10 +85,10 @@ export const MAX_REMINDER_NUMBER = 500
 
 const GENTLE_OVER = 0.1
 const STRONG_OVER = 0.5
-const SKIP_BEFORE_MIN = 20
-const SKIP_AFTER_MIN = 15
-const SMALL_UNTIL_MIN = 30
-const SMALL_MAX_G = 25
+export const SKIP_BEFORE_MIN = 20
+export const SKIP_AFTER_MIN = 15
+export const SMALL_UNTIL_MIN = 30
+export const SMALL_MAX_G = 25
 
 export type CarbWarning = { level: "gentle" | "strong"; over: number }
 

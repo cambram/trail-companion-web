@@ -1,4 +1,4 @@
-import { Share, Users } from "lucide-react"
+import { FileText, Share, Users } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router"
 
@@ -21,6 +21,8 @@ import { ApiError } from "@/lib/api"
 import { crewBrief } from "@/lib/planInsights"
 import { racesApi } from "@/lib/racesApi"
 import { cn } from "@/lib/utils"
+
+const ICON_LINK = "grid size-[42px] flex-none place-items-center rounded-full bg-card shadow-card"
 
 const TABS = [
   { id: "plan", label: "Plan" },
@@ -85,7 +87,11 @@ export default function RacePage() {
   if (race?.role === "Crew")
     return (
       <AppFrame>
-        <BackHeader to="/" label="Back to races" title="Crew view" />
+        <BackHeader to="/" label="Back to races" title="Crew view">
+          <Link to={`/races/${id}/print`} aria-label="Export plan as PDF" className={ICON_LINK}>
+            <FileText className="size-5" aria-hidden />
+          </Link>
+        </BackHeader>
         <Link to={`/races/${id}/live`} className={`${buttonVariants({ variant: "default", block: true })} mb-3.5`}>
           Live tracking
         </Link>
@@ -115,13 +121,14 @@ export default function RacePage() {
   return (
     <AppFrame className="pb-28">
       <BackHeader to="/" label="Back to races" title="Race plan">
-        <Link
-          to={`/races/${id}/share`}
-          aria-label="Share with crew"
-          className="grid size-[42px] flex-none place-items-center rounded-full bg-card shadow-card"
-        >
-          <Users className="size-5" aria-hidden />
-        </Link>
+        <div className="flex gap-2">
+          <Link to={`/races/${id}/print`} aria-label="Export plan as PDF" className={ICON_LINK}>
+            <FileText className="size-5" aria-hidden />
+          </Link>
+          <Link to={`/races/${id}/share`} aria-label="Share with crew" className={ICON_LINK}>
+            <Users className="size-5" aria-hidden />
+          </Link>
+        </div>
       </BackHeader>
       {loadError && <ErrorText>{loadError.message}</ErrorText>}
       {!race && !loadError && <p className="text-[0.8125rem] text-muted-foreground">Loading...</p>}

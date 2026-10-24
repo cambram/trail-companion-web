@@ -5,6 +5,7 @@ import JoinPage from "@/pages/JoinPage"
 import LivePage from "@/pages/LivePage"
 import LoginPage from "@/pages/LoginPage"
 import NutritionPage from "@/pages/NutritionPage"
+import PrintPage from "@/pages/PrintPage"
 import RegisterPage from "@/pages/RegisterPage"
 import RacePage from "@/pages/RacePage"
 import RacesPage from "@/pages/RacesPage"
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/races/:id" element={<RacePage />} />
         <Route path="/races/:id/share" element={<SharePage />} />
         <Route path="/races/:id/live" element={<LivePage />} />
+        <Route path="/races/:id/print" element={<PrintPage />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/join/:pin" element={<JoinPage />} />
         <Route path="/nutrition" element={<NutritionPage />} />
